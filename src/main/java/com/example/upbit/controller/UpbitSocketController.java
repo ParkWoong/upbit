@@ -2,7 +2,7 @@ package com.example.upbit.controller;
 
 import org.springframework.web.bind.annotation.RestController;
 
-import com.example.upbit.service.UpbitSocketService;
+import com.example.upbit.service.socket.UpbitSocketService;
 
 import lombok.RequiredArgsConstructor;
 

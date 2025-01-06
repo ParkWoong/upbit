@@ -1,9 +1,8 @@
-package com.example.upbit.service;
+package com.example.upbit.service.api;
 
 import java.util.List;
 import java.util.Map;
 
-import org.json.JSONObject;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -77,13 +76,14 @@ public class UpbitRestApiService {
             .doOnNext(data -> System.out.println("Value : " + data));
     }
 
+    /*
+     * 현재 시장가를 가져오는 로직
+     */
     private Long parseMarketPrice(List<Map<String, Object>> jsonResponse) {
-        // 응답에서 현재 시장가 추출 (여기서는 예시로 JSON 파싱하는 방법 사용)
-        // 실제로는 JSON 라이브러리로 응답을 파싱하여 가격을 가져옵니다.
 
         double price = (double) jsonResponse.get(0).get("opening_price");
 
-        return (long)price; // 예시로 50,500,000원이라고 가정
+        return (long)price;
     }
 
     private void evaluateSellCondition(Double currentPrice) {

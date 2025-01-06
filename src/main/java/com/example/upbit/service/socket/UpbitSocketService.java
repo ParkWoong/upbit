@@ -1,4 +1,4 @@
-package com.example.upbit.service;
+package com.example.upbit.service.socket;
 
 import java.net.URI;
 import java.util.ArrayList;

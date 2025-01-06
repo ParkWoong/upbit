@@ -2,10 +2,13 @@ package com.example.upbit.controller;
 
 import org.springframework.web.bind.annotation.RestController;
 
-import com.example.upbit.service.UpbitRestApiService;
+import com.example.upbit.service.api.GetCoinService;
+import com.example.upbit.service.api.UpbitRestApiService;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
+
+
 
 
 @RestController
@@ -13,7 +16,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 public class UpbitRestAPIController {
     
     private final UpbitRestApiService service;
-    
+    private final GetCoinService getCoinService;
+
     @GetMapping("/api/get/tradingInfo")
     public void getAPITradingInfo() {
         service.startTrading();
@@ -23,5 +27,11 @@ public class UpbitRestAPIController {
     // public String getCurrentInfo() {
     //     return service.getOnePrice();
     // }
+
+    @GetMapping("/api/get/filteringCoin")
+    public String getFilteringCoin() {
+        return getCoinService.findBuyTargets().toString();
+    }
+    
     
 }
