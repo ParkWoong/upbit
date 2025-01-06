@@ -23,7 +23,6 @@ public class WebClientConfig {
     private static final String ENCODINGHEADER = "accept-encoding";
     private static final String ENCODINGVALUE = "identity";
     private static byte[] EMPTY_BODY = {};
-    private static String BASE_URL = "https://api.upbit.com";
 
     @Bean
     public static HttpClient defaultHttpClient() {
@@ -61,7 +60,7 @@ public class WebClientConfig {
 
         ResponseEntity<?> responseFromExternal = webClient
                         .post()
-                        .uri(BASE_URL, uriBuilder ->
+                        .uri(endPoint, uriBuilder ->
                                     uriBuilder.queryParams(params).build())
                         .headers(h -> {
                                 h.addAll(headers);
@@ -76,12 +75,12 @@ public class WebClientConfig {
         return responseFromExternal;
     }
 
-    public static <R> ResponseEntity<?> getSend(final String path,
+    public static <R> ResponseEntity<?> getSend(final String endPoint,
                                                 final HttpHeaders headers,
                                                 final MultiValueMap<String, String> params,
                                                 final ParameterizedTypeReference<R> responseType){
         return webClient.get()
-                        .uri(BASE_URL, uriBuilder -> uriBuilder.queryParams(params).build())
+                        .uri(endPoint, uriBuilder -> uriBuilder.queryParams(params).build())
                         .headers(h -> {
                             h.addAll(headers);
                             h.set(ENCODINGHEADER, ENCODINGVALUE);
