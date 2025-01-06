@@ -11,7 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import static com.example.upbit.config.WebClientConfig.getSend;
-import static com.example.upbit.config.WebClientConfig.postSend;
+//import static com.example.upbit.config.WebClientConfig.postSend;
 
 import lombok.RequiredArgsConstructor;
 
