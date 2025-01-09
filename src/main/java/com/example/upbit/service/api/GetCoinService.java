@@ -1,13 +1,13 @@
 package com.example.upbit.service.api;
 
-import org.springframework.http.HttpStatus;
-import org.springframework.http.HttpStatusCode;
+
+
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import reactor.core.publisher.Mono;
+
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -19,6 +19,12 @@ public class GetCoinService {
 
     private final WebClient webClient;
     private final static String API_URL = "https://api.upbit.com/v1";
+    public static List<String> collectedCoins = new ArrayList<>();
+
+
+    protected void getCoin(){
+        collectedCoins = findBuyTargets();
+    }
 
     /**
      * 매수 대상을 탐색하는 메서드
@@ -30,15 +36,15 @@ public class GetCoinService {
 
         // 2. 거래량 급증한 코인 필터링
         List<String> highVolumeMarkets = findHighVolumeMarkets(allMarkets);
-        log.info("2. Filtering High Trading Coins : {}", highVolumeMarkets.toString());
+        log.info("2. Filtering High Trading Coins : {}, count : {}", highVolumeMarkets.toString(), highVolumeMarkets.size());
 
         // 3. RSI 값이 30 이상인 코인 필터링
         List<String> rsiAbove30Markets = filterMarketsByRSI(highVolumeMarkets);
-        log.info("3. Filtering over RSI > 30 Coins : {}", rsiAbove30Markets.toString());
+        log.info("3. Filtering over RSI > 50 Coins : {}, count : {}", rsiAbove30Markets.toString(), rsiAbove30Markets.size());
 
         // 4. 매수 주문량 > 매도 주문량 필터링
         List<String> coinList = filterMarketsByOrderBook(rsiAbove30Markets);
-        log.info("4. Filtering total trading BIZ : {}", coinList.toString());
+        log.info("4. Filtering total trading BIZ : {}, count : {}", coinList.toString(), coinList.size());
 
         return coinList;
     }
@@ -56,8 +62,8 @@ public class GetCoinService {
                 .stream()
                 .map(market -> (String) ((Map<String, Object>) market).get("market"))
                 .filter(market -> ((String) market).startsWith("KRW-")) // KRW 마켓만 가져오기
+                //.limit(2) // 앞의 코인 3개만
                 .collect(Collectors.toList());
-
         return allCoins;
     }
 
@@ -69,14 +75,14 @@ public class GetCoinService {
         allMarkets.forEach(market -> {
             log.info("Market : {}", market);
             try {
-                Thread.sleep(2000);
+                Thread.sleep(100);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
             Map<String, Object> tickerData = getTickerData(market);
             if (tickerData != null) {
                 
-                log.info("TickerData : {}", tickerData.get("acc_trade_volume_24h"));
+                //log.info("TickerData : {}", tickerData.get("acc_trade_volume_24h"));
                 
                 double tradeVolume = (double) tickerData.get("acc_trade_volume_24h");
                 double avgTradeVolume = calculateAverageTradeVolume(market);
@@ -88,7 +94,7 @@ public class GetCoinService {
             }
         });
 
-        log.info("High Trading Coins : {}", highVolumeMarkets.toString());
+        //log.info("High Trading Coins : {}", highVolumeMarkets.toString());
 
         return highVolumeMarkets;
     }
@@ -98,7 +104,7 @@ public class GetCoinService {
      */
     private double calculateAverageTradeVolume(String market) {
         // 이 함수는 최근 n개의 데이터를 가져와 평균 거래량을 계산합니다.
-        List<Map<String, Object>> candles = getRecentCandles(market, 5); // 최근 30분 캔들 가져오기
+        List<Map<String, Object>> candles = getRecentCandles(market, 5); // 최근 5분 캔들 가져오기
         return candles.stream()
                 .mapToDouble(candle -> (double) candle.get("candle_acc_trade_volume"))
                 .average()
@@ -113,7 +119,7 @@ public class GetCoinService {
                 .filter(market -> {
                     List<Double> closingPrices = getClosingPrices(market, 14); // 최근 14개의 종가 가져오기
                     double rsi = calculateRSI(closingPrices);
-                    return rsi >= 30;
+                    return rsi >= 50;
                 })
                 .collect(Collectors.toList());
     }
@@ -123,15 +129,23 @@ public class GetCoinService {
      */
     private List<String> filterMarketsByOrderBook(List<String> markets) {
         return markets.stream()
-                .filter(market -> {
+                .map(market -> {
                     Map<String, Object> orderBook = getOrderBookData(market);
                     if (orderBook != null) {
-                        double totalBidSize = (double) orderBook.get("total_bid_size");
-                        double totalAskSize = (double) orderBook.get("total_ask_size");
-                        return totalBidSize > totalAskSize;
+                        double totalBidSize = (double) orderBook.get("total_bid_size"); // 호가 매수 총잔량
+                        double totalAskSize = (double) orderBook.get("total_ask_size"); // 호가 매도 총잔량
+                        final double bizDiff = totalBidSize - totalAskSize;
+
+                        return new AbstractMap.SimpleEntry<>(market, bizDiff);
                     }
-                    return false;
-                })
+                    return null;
+                    }
+                )
+                .filter(Objects::nonNull)
+                .filter(data -> data.getValue() > 0)
+                .sorted((e1, e2) -> Double.compare(e2.getValue(), e1.getValue())) // 매수량 차이 기준 내림차순 정렬
+                .limit(3)
+                .map(Map.Entry::getKey)
                 .collect(Collectors.toList());
     }
 
@@ -139,6 +153,11 @@ public class GetCoinService {
      * 특정 코인의 종가 리스트 가져오기
      */
     private List<Double> getClosingPrices(String market, int count) {
+        try {
+            Thread.sleep(100);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         List<Map<String, Object>> candles = getRecentCandles(market, count);
         return candles.stream()
                 .map(candle -> (double) candle.get("trade_price"))
@@ -171,7 +190,7 @@ public class GetCoinService {
     @SuppressWarnings("all")
     private List<Map<String, Object>> getRecentCandles(String market, int count) {
         return Objects.requireNonNull(webClient.get()
-                .uri(uriBuilder -> uriBuilder
+                .uri(API_URL, uriBuilder -> uriBuilder
                         .path("/candles/minutes/1") // 1분 캔들
                         .queryParam("market", market)
                         .queryParam("count", count)
@@ -219,6 +238,11 @@ public class GetCoinService {
      */
     @SuppressWarnings("all")
     private Map<String, Object> getOrderBookData(String market) {
+        try {
+            Thread.sleep(100);
+        } catch (Exception e) {
+            // TODO: handle exception
+        }
         return (Map<String, Object>) Objects.requireNonNull(webClient.get()
                 .uri(API_URL, uriBuilder -> uriBuilder
                         .path("/orderbook")
