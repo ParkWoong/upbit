@@ -2,6 +2,7 @@ package com.example.upbit.controller;
 
 import org.springframework.web.bind.annotation.RestController;
 
+import com.example.upbit.properties.TradeKeyProperties;
 import com.example.upbit.service.api.GetCoinService;
 import com.example.upbit.service.api.UpbitRestApiService;
 
@@ -17,10 +18,14 @@ public class UpbitRestAPIController {
     
     private final UpbitRestApiService service;
     private final GetCoinService getCoinService;
+    private final TradeKeyProperties tradeKeyProperties;
 
     @GetMapping("/api/get/tradingInfo")
     public void getAPITradingInfo() {
-        service.startTrading();
+
+        //String MARKET = "KRW-BONK";
+
+        service.getCoin();
     }
 
     // @GetMapping("/api/current/tradingInfo")

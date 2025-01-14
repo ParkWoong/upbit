@@ -144,7 +144,7 @@ public class GetCoinService {
                 .filter(Objects::nonNull)
                 .filter(data -> data.getValue() > 0)
                 .sorted((e1, e2) -> Double.compare(e2.getValue(), e1.getValue())) // 매수량 차이 기준 내림차순 정렬
-                .limit(3)
+                .limit(1)
                 .map(Map.Entry::getKey)
                 .collect(Collectors.toList());
     }
@@ -204,27 +204,13 @@ public class GetCoinService {
      * 특정 마켓의 실시간 티커 데이터 가져오기
      */
     @SuppressWarnings("all")
-    private Map<String, Object> getTickerData(String market) {
+    public Map<String, Object> getTickerData(String market) {
         return (Map<String, Object>) Objects.requireNonNull(webClient.get()
                 .uri(API_URL, uriBuilder -> uriBuilder
                         .path("/ticker")
                         .queryParam("markets", market)
                         .build())
                 .retrieve()
-                // .onStatus(HttpStatus::isError, e-> {
-
-                //     HttpStatusCode statusCode = e.statusCode();
-
-                //     return e.bodyToMono(String.class)
-                //             .defaultIfEmpty("No response body")
-                //             .flatMap(error -> {
-                //                 log.info("Http Status : {}",  statusCode);
-                //                 log.info("Error : {}", error);
-
-                //                 return Mono.empty();
-                //             });
-
-                // })
                 .bodyToMono(List.class)
                 .block())
                 .stream()

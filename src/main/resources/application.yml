@@ -1,0 +1,15 @@
+spring:
+    application:
+        name: upbit
+
+trade:
+    key:
+        first_coin: fisrtCoin
+        second_coin: secondCoin
+        buy_price: buyPrice
+        sell_price: sellPrice
+        profit_margin: profitMargin
+        loss_margin: lossMargin
+        trade_price: trade_price
+
+        
