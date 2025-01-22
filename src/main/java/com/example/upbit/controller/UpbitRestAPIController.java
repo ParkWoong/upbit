@@ -18,7 +18,6 @@ public class UpbitRestAPIController {
     
     private final UpbitRestApiService service;
     private final GetCoinService getCoinService;
-    private final TradeKeyProperties tradeKeyProperties;
 
     @GetMapping("/api/get/tradingInfo")
     public void getAPITradingInfo() {

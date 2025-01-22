@@ -15,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 public class UpbitRestApiService {
 
     private final GetCoinService getCoinService;
+    
     // 1초의 시장가를 가져오는 API EndPoint
     private static final String API_URL = "https://api.upbit.com/v1/candles/seconds";
     
@@ -35,11 +36,6 @@ public class UpbitRestApiService {
         tradeInfo.put(tradeKeyProperties.getTradePrice(), tradePrice);
         
         currentCoinTradeMap.put(coinName, tradeInfo);
-
-        System.out.println(currentCoinTradeMap.toString());
-
     }
-
-    
    
 }

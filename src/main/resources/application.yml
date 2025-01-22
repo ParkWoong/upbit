@@ -11,5 +11,6 @@ trade:
         profit_margin: profitMargin
         loss_margin: lossMargin
         trade_price: trade_price
-
+upbit:
+    token: JWT
         
