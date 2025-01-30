@@ -40,10 +40,14 @@ public class WebClientConfig {
     public static WebClient webClient(HttpClient httpClient){
         return WebClient
         .builder()
+        // Use ExchangeFilterFunction
+        .filter(null)
         .clientConnector(new ReactorClientHttpConnector(httpClient))
         .build()
         ;
     }
+
+
 
     @Bean
     public static WebClient defaultWebClient(HttpClient httpClient){

@@ -12,5 +12,8 @@ trade:
         loss_margin: lossMargin
         trade_price: trade_price
 upbit:
-    token: JWT
+    # MySQL DB 설정 필수
+    access_key: accessKey
+    secret_key: secretKey
+
         
