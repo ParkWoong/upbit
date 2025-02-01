@@ -1,4 +1,4 @@
-package com.example.upbit.service.api;
+package com.example.upbit.service;
 
 import org.springframework.stereotype.Service;
 
@@ -15,7 +15,9 @@ public class CoinTradeService {
         // bid : 매수
         // ask : 매도
         // price : 100,000
-        // 
+        
+
+        //======================
 
         
 
