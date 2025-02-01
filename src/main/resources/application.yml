@@ -1,4 +1,6 @@
 spring:
+    profiles:
+        active: local 
     application:
         name: upbit
     datasource:
@@ -24,7 +26,7 @@ trade:
         loss_margin: lossMargin
         trade_price: trade_price
 upbit:
-    # MySQL DB 설정 필수
+    # local 관리 필수
     access_key: accessKey
     secret_key: secretKey
 

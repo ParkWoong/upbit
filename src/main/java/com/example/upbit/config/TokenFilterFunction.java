@@ -31,7 +31,7 @@ public class TokenFilterFunction implements ExchangeFilterFunction {
     private final static String tokenRequestEndPoint = "test";
     
     @Override
-    @SuppressWarnings("method")
+    @SuppressWarnings({ "method", "null", "unchecked" })
     public Mono<ClientResponse> filter(ClientRequest request, ExchangeFunction next) {
 
         if(request.url().toString().equals(tokenRequestEndPoint))
