@@ -2,7 +2,6 @@ package com.example.upbit.util;
 
 import java.security.Key;
 import java.security.MessageDigest;
-import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;

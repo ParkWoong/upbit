@@ -2,7 +2,6 @@ package com.example.upbit.controller;
 
 import org.springframework.web.bind.annotation.RestController;
 
-import com.example.upbit.properties.TradeKeyProperties;
 import com.example.upbit.service.api.GetCoinService;
 import com.example.upbit.service.api.UpbitRestApiService;
 

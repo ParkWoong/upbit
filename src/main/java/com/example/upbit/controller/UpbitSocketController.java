@@ -7,8 +7,6 @@ import com.example.upbit.service.socket.UpbitSocketService;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-
 
 @RestController
 @RequiredArgsConstructor

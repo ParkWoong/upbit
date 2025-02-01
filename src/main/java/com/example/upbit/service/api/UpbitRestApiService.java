@@ -8,9 +8,11 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.springframework.stereotype.Service;
 import com.example.upbit.properties.TradeKeyProperties;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class UpbitRestApiService {
 
@@ -25,12 +27,16 @@ public class UpbitRestApiService {
 
     // 1개의 코인으로 거래 시작
     public void getCoin(){
-        String coinName = getCoinService.findBuyTargets().get(0);
+        //String coinName = getCoinService.findBuyTargets().get(0);
 
-        String tradePrice = (String) getCoinService
-                                            .getTickerData(coinName)
-                                            .get(tradeKeyProperties.getTradePrice());
+        String coinName = "KRW-KNC";
         
+        String tradePrice = String.valueOf(getCoinService
+                                    .getTickerData(coinName)
+                                    .get(tradeKeyProperties.getTradePrice()));
+
+        log.info("TradePrice : {}", tradePrice);
+
         Map<String, String> tradeInfo = new HashMap<>();
         
         tradeInfo.put(tradeKeyProperties.getTradePrice(), tradePrice);
