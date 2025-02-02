@@ -53,7 +53,7 @@ public class GetCoinService {
      * 전체 마켓 정보를 가져오는 메서드
      */
     @SuppressWarnings("all")
-    private List<String> getAllMarkets() {
+    public List<String> getAllMarkets() {
         List<String> allCoins = (List<String>) Objects.requireNonNull(webClient.get()
                 .uri(API_URL + "/market/all")
                 .retrieve()
@@ -144,14 +144,14 @@ public class GetCoinService {
                 .filter(Objects::nonNull)
                 .filter(data -> data.getValue() > 0)
                 .sorted((e1, e2) -> Double.compare(e2.getValue(), e1.getValue())) // 매수량 차이 기준 내림차순 정렬
-                .limit(1)
+                .limit(1) // 1개의 코인만 가져옴옴
                 .map(Map.Entry::getKey)
                 .collect(Collectors.toList());
     }
 
-    /**
-     * 특정 코인의 종가 리스트 가져오기
-     */
+    //=======================================
+    // 특정 코인의 종가 리스트 가져오기
+    //=======================================
     private List<Double> getClosingPrices(String market, int count) {
         try {
             Thread.sleep(100);

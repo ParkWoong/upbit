@@ -11,7 +11,9 @@ import org.springframework.util.StringUtils;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class JWTUtil {
     
     //================================
@@ -41,11 +43,15 @@ public class JWTUtil {
         }
         
         // 4. Set Jwts Token
-        return Jwts.builder()
+        final String token = Jwts.builder()
                     .setHeader(headers)
                     .setClaims(claims)
                     .signWith(key, SignatureAlgorithm.HS256)
                     .compact();
+
+        log.info("JWT Token : {}", token);
+
+        return token;
     }
 
         // Set Hashed query

@@ -6,6 +6,7 @@ import org.springframework.core.ParameterizedTypeReference;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.util.MultiValueMap;
@@ -59,25 +60,28 @@ public class WebClientConfig {
         return webClient = webClient(defaultHttpClient());
     }
 
-    public static <T, R> ResponseEntity<?> postSend(
+    public static <T> ResponseEntity<String> postSend(
                         final String endPoint,
-                        final HttpHeaders headers, final T requestBody,
-                        final MultiValueMap<String, String> params,
-                        final ParameterizedTypeReference<R> responseClass) {
+                        final HttpHeaders headers,
+                        final T requestBody,
+                        final MultiValueMap<String, String> params) {
                                 
         log.info("  SERVICE) Call Post API endPoint : {}", endPoint);
 
-        ResponseEntity<?> responseFromExternal = webClient
+        ResponseEntity<String> responseFromExternal = webClient
                         .post()
                         .uri(endPoint, uriBuilder ->
                                     uriBuilder.queryParams(params).build())
+                        .contentType(MediaType.APPLICATION_JSON) // default Content Type
                         .headers(h -> {
-                                h.addAll(headers);
+                                if(headers != null)
+                                    h.addAll(headers);
                                 h.set(ENCODINGHEADER, ENCODINGVALUE);
                         })
-                        .bodyValue(requestBody != null ? requestBody : EMPTY_BODY)
+                        //body(new CachingBodyInserter<>(BodyInserters.fromValue(requestBody)))
+                        .bodyValue(requestBody!=null?requestBody:EMPTY_BODY)
                         .retrieve()
-                        .toEntity(responseClass)
+                        .toEntity(String.class)
                         .block();
 
 
@@ -91,12 +95,33 @@ public class WebClientConfig {
         return webClient.get()
                         .uri(endPoint, uriBuilder -> uriBuilder.queryParams(params).build())
                         .headers(h -> {
-                            h.addAll(headers);
+                            if(headers != null)
+                                h.addAll(headers);
                             h.set(ENCODINGHEADER, ENCODINGVALUE);
                         })
                         .retrieve()
                         .toEntity(responseType)
                         .block();
     }
+
+    // ExchangeFilterFunction cachingBodyInserterFilter = ExchangeFilterFunction.ofRequestProcessor(request -> {
+    //     if (request.method() == HttpMethod.POST) {
+    //         // 타입 캐스팅
+    //         BodyInserter<?, ReactiveHttpOutputMessage> castedInserter =
+    //                 (BodyInserter<?, ReactiveHttpOutputMessage>) request.body();
+    
+    //         if (!(castedInserter instanceof CachingBodyInserter)) {
+    //             CachingBodyInserter<ReactiveHttpOutputMessage> cachingInserter =
+    //                     new CachingBodyInserter<>(castedInserter);
+    
+    //             ClientRequest newRequest = ClientRequest.from(request)
+    //                     .body(cachingInserter)
+    //                     .build();
+    
+    //             return Mono.just(newRequest);
+    //         }
+    //     }
+    //     return Mono.just(request);
+    // });
 
 }
