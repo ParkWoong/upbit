@@ -8,6 +8,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.springframework.stereotype.Service;
 
+import com.example.upbit.history.entity.TradeHis;
 import com.example.upbit.properties.TradeKeyProperties;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
@@ -20,9 +21,12 @@ import static com.example.upbit.config.WebClientConfig.postSend;
 @RequiredArgsConstructor
 public class CoinTradeService {
 
-    private volatile static BigDecimal AMOUNT = new BigDecimal("100000");
-    private volatile boolean TRADING_ACTIVE = true; // 트레이딩 활성 상태
-    private volatile static BigDecimal CURRENT_VOLMUE;
+
+    protected volatile static BigDecimal START_AMOUNT = new BigDecimal("100000");
+    protected volatile static BigDecimal TRADED_AMOUNT;
+    
+    protected volatile boolean TRADING_ACTIVE = true; // 트레이딩 활성 상태
+    protected volatile static BigDecimal CURRENT_VOLMUE;
 
     private final String TRADE_ENDPOINT = "https://api.upbit.com/v1/order";
     private final GetCoinService getCoinService;
@@ -33,7 +37,7 @@ public class CoinTradeService {
 
         while (TRADING_ACTIVE) {
             try {
-                if(startPrice != null) AMOUNT = new BigDecimal(startPrice);
+                if(startPrice != null) START_AMOUNT = new BigDecimal(startPrice);
 
                 // 매매법에 따른 코인 가져오기
                 final String coin = getCoinService.findBuyTargets().get(0);
@@ -50,7 +54,7 @@ public class CoinTradeService {
                 // -0.13%
                 //final BigDecimal stopLossPrice = marketPrice.multiply(BigDecimal.valueOf(0.987));
 
-                placeMarketBuyOrder(TRADE_ENDPOINT, coin, AMOUNT);
+                placeMarketBuyOrder(TRADE_ENDPOINT, coin, START_AMOUNT);
 
                 while (TRADING_ACTIVE) {
 
@@ -62,7 +66,7 @@ public class CoinTradeService {
                             .get(tradeKeyProperties.getTradePrice()).toString());
                     
                     if (currentPrice.compareTo(profitPrice) >= 0) {
-                        placeMarketBuyOrder(TRADE_ENDPOINT, coin, AMOUNT);
+                        placeMarketBuyOrder(TRADE_ENDPOINT, coin, START_AMOUNT);
                         break;
                     } else if (currentPrice.compareTo(lossPrice) <= 0) {
                         placeMarketSellOrder(TRADE_ENDPOINT, coin);
@@ -141,7 +145,27 @@ public class CoinTradeService {
     // TEST
     //===================
     public void testBuy(final BigDecimal marketPrice){
-        CURRENT_VOLMUE = AMOUNT.divide(marketPrice, 8, RoundingMode.DOWN);
+
+        // 매수 후 금액
+        START_AMOUNT = new BigDecimal(0);
+
+        // 현재 보유 코인 수
+        CURRENT_VOLMUE = START_AMOUNT.divide(marketPrice, 8, RoundingMode.DOWN);
     }
+
+    public void testSell(final BigDecimal marketPrice){
+        
+        // 매도 후 금액
+        START_AMOUNT = marketPrice.multiply(CURRENT_VOLMUE);
+        
+        // 보유 코인 갯수 = 0
+        CURRENT_VOLMUE = new BigDecimal(0);
+
+
+        // DB 작업 진행
+
+    
+    }
+
 
 }
