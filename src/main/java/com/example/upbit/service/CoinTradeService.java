@@ -4,10 +4,12 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 import org.springframework.stereotype.Service;
 
+import com.example.upbit.history.repository.TradeHisRepository;
 import com.example.upbit.properties.TradeKeyProperties;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
@@ -15,6 +17,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.RequiredArgsConstructor;
 import static com.example.upbit.config.WebClientConfig.postSend;
+import static com.example.upbit.util.UUIDUtils.createUUID;
 
 @Service
 @RequiredArgsConstructor
@@ -32,9 +35,14 @@ public class CoinTradeService {
     private final TradeKeyProperties tradeKeyProperties;
     private final ObjectMapper objectMapper;
 
+    private final TradeHisRepository tradeHisRepository;
+
     public boolean tryTrade(final String startPrice) {
 
         while (TRADING_ACTIVE) {
+
+            final String tradeId = createUUID();
+
             try {
                 if(startPrice != null) START_AMOUNT = new BigDecimal(startPrice);
 
@@ -157,7 +165,7 @@ public class CoinTradeService {
 
     }
 
-    public void testSell(final BigDecimal marketPrice){
+    public void testSell(final String coin, final BigDecimal marketPrice){
         
         // 매도 후 금액
         START_AMOUNT = START_AMOUNT.add(marketPrice.multiply(CURRENT_VOLMUE));
