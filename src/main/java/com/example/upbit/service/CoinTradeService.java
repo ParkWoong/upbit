@@ -8,7 +8,6 @@ import java.util.concurrent.TimeUnit;
 
 import org.springframework.stereotype.Service;
 
-import com.example.upbit.history.entity.TradeHis;
 import com.example.upbit.properties.TradeKeyProperties;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
@@ -21,7 +20,7 @@ import static com.example.upbit.config.WebClientConfig.postSend;
 @RequiredArgsConstructor
 public class CoinTradeService {
 
-
+    protected volatile static BigDecimal BALANCE = new BigDecimal("0");
     protected volatile static BigDecimal START_AMOUNT = new BigDecimal("100000");
     protected volatile static BigDecimal TRADED_AMOUNT;
     
@@ -147,16 +146,21 @@ public class CoinTradeService {
     public void testBuy(final BigDecimal marketPrice){
 
         // 매수 후 금액
-        START_AMOUNT = new BigDecimal(0);
-
+        // 나머지 연산
+        START_AMOUNT = START_AMOUNT.remainder(marketPrice);
+        
         // 현재 보유 코인 수
         CURRENT_VOLMUE = START_AMOUNT.divide(marketPrice, 8, RoundingMode.DOWN);
+
+        // 매수 금액
+        TRADED_AMOUNT = marketPrice.multiply(CURRENT_VOLMUE);
+
     }
 
     public void testSell(final BigDecimal marketPrice){
         
         // 매도 후 금액
-        START_AMOUNT = marketPrice.multiply(CURRENT_VOLMUE);
+        START_AMOUNT = START_AMOUNT.add(marketPrice.multiply(CURRENT_VOLMUE));
         
         // 보유 코인 갯수 = 0
         CURRENT_VOLMUE = new BigDecimal(0);
