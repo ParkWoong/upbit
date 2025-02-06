@@ -20,12 +20,14 @@ public class TradeHis {
     
     @Id
     private String coin;    // 코인명명
-    
+    @Id
+    private String uuid;
+
     @Builder.Default
     private LocalDateTime tradeTime = LocalDateTime.now();
     
     private String startAmount; // 거래 시작 금액
     private String tradedAmount;   // 거래 된 금액
     private String type;    // 손/익 타임
-    private double diffAmount;  // 거래 차액
+    private String diffAmount;  // 거래 차액
 }

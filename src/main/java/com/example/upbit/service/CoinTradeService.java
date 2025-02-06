@@ -4,11 +4,12 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 import org.springframework.stereotype.Service;
 
+import com.example.upbit.history.entity.TradeHis;
+import com.example.upbit.history.repository.CommonRepository;
 import com.example.upbit.history.repository.TradeHisRepository;
 import com.example.upbit.properties.TradeKeyProperties;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -23,9 +24,21 @@ import static com.example.upbit.util.UUIDUtils.createUUID;
 @RequiredArgsConstructor
 public class CoinTradeService {
 
-    protected volatile static BigDecimal BALANCE = new BigDecimal("0");
-    protected volatile static BigDecimal START_AMOUNT = new BigDecimal("100000");
-    protected volatile static BigDecimal TRADED_AMOUNT;
+    //=======================================
+    // marketPrice → API로 받아온 시장가
+    // BALANCE → 현재 내 잔액 (10만 원)
+    // START_BALANCE → 매수에 사용한 금액
+    // TRADED_BALANCE → 매도 한 금액
+    // BALANCE_AFTER_BUY -> 매수 후 남은 금액
+    // BALANCE_AFTER_SELL -> 매도 후 남은 금액
+    // CURRENT_AMOUNT → 매수 후 보유 코인 수량
+    //=======================================
+
+    protected volatile static BigDecimal BALANCE = new BigDecimal("100000");
+    protected volatile static BigDecimal START_BALANCE = new BigDecimal("100000");
+    protected volatile static BigDecimal TRADED_BALANCE;
+    protected volatile static BigDecimal BALANCE_AFTER_BUY;
+    protected volatile static BigDecimal BALANCE_AFTER_SELL;
     
     protected volatile boolean TRADING_ACTIVE = true; // 트레이딩 활성 상태
     protected volatile static BigDecimal CURRENT_VOLMUE;
@@ -35,7 +48,7 @@ public class CoinTradeService {
     private final TradeKeyProperties tradeKeyProperties;
     private final ObjectMapper objectMapper;
 
-    private final TradeHisRepository tradeHisRepository;
+    private final CommonRepository commonRepository;
 
     public boolean tryTrade(final String startPrice) {
 
@@ -44,7 +57,7 @@ public class CoinTradeService {
             final String tradeId = createUUID();
 
             try {
-                if(startPrice != null) START_AMOUNT = new BigDecimal(startPrice);
+                if(startPrice != null) START_BALANCE = new BigDecimal(startPrice);
 
                 // 매매법에 따른 코인 가져오기
                 final String coin = getCoinService.findBuyTargets().get(0);
@@ -61,7 +74,7 @@ public class CoinTradeService {
                 // -0.13%
                 //final BigDecimal stopLossPrice = marketPrice.multiply(BigDecimal.valueOf(0.987));
 
-                placeMarketBuyOrder(TRADE_ENDPOINT, coin, START_AMOUNT);
+                placeMarketBuyOrder(TRADE_ENDPOINT, coin, START_BALANCE);
 
                 while (TRADING_ACTIVE) {
 
@@ -73,7 +86,7 @@ public class CoinTradeService {
                             .get(tradeKeyProperties.getTradePrice()).toString());
                     
                     if (currentPrice.compareTo(profitPrice) >= 0) {
-                        placeMarketBuyOrder(TRADE_ENDPOINT, coin, START_AMOUNT);
+                        placeMarketBuyOrder(TRADE_ENDPOINT, coin, START_BALANCE);
                         break;
                     } else if (currentPrice.compareTo(lossPrice) <= 0) {
                         placeMarketSellOrder(TRADE_ENDPOINT, coin);
@@ -152,31 +165,39 @@ public class CoinTradeService {
     // TEST
     //===================
     public void testBuy(final BigDecimal marketPrice){
-
-        // 매수 후 금액
-        // 나머지 연산
-        START_AMOUNT = START_AMOUNT.remainder(marketPrice);
-        
         // 현재 보유 코인 수
-        CURRENT_VOLMUE = START_AMOUNT.divide(marketPrice, 8, RoundingMode.DOWN);
-
-        // 매수 금액
-        TRADED_AMOUNT = marketPrice.multiply(CURRENT_VOLMUE);
+        CURRENT_VOLMUE = BALANCE.divide(marketPrice, 8, RoundingMode.DOWN);
+        // 사용된 금액
+        START_BALANCE = CURRENT_VOLMUE.multiply(marketPrice);
+        // 매수 후 남은 금액
+        BALANCE = BALANCE.subtract(START_BALANCE);
 
     }
 
     public void testSell(final String coin, final BigDecimal marketPrice){
+        // 매도 금액
+        TRADED_BALANCE = CURRENT_VOLMUE.multiply(marketPrice);
+        // 매도 후 남은 금액
+        BALANCE_AFTER_SELL = BALANCE_AFTER_BUY.add(TRADED_BALANCE);
+        // 남은 금액 업데이트
+        BALANCE = BALANCE_AFTER_SELL;
+    }
+
+    public void saveTradeHis(final String coin, final String uuid,
+                            final BigDecimal starBalance, final BigDecimal tradedBalance){
         
-        // 매도 후 금액
-        START_AMOUNT = START_AMOUNT.add(marketPrice.multiply(CURRENT_VOLMUE));
+        BigDecimal diff = starBalance.subtract(tradedBalance);
         
-        // 보유 코인 갯수 = 0
-        CURRENT_VOLMUE = new BigDecimal(0);
-
-
-        // DB 작업 진행
-
-    
+        TradeHis trade = TradeHis.builder()
+                                .uuid(uuid)
+                                .coin(coin)
+                                .startAmount(starBalance.toPlainString())
+                                .tradedAmount(tradedBalance.toPlainString())
+                                .type((diff.compareTo(BigDecimal.ZERO) > 0) ? "PROFIT":"LOSS")
+                                .diffAmount(diff.toPlainString())
+                                .build();
+                                
+        commonRepository.saveTrade(trade);
     }
 
 
