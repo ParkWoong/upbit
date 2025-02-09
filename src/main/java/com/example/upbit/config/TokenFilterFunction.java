@@ -34,7 +34,7 @@ public class TokenFilterFunction implements ExchangeFilterFunction {
 
         final String endPoint = request.url().toString();
 
-        log.info("URL : {}", endPoint);
+        //log.info("URL : {}", endPoint);
 
         if(endPoint.equals(tokenRequestEndPoint)){
             log.info("====== {} needs JWT token ======", endPoint);

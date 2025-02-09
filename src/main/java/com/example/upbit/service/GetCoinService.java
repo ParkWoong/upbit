@@ -205,14 +205,27 @@ public class GetCoinService {
      */
     @SuppressWarnings("all")
     public Map<String, Object> getTickerData(String market) {
-        return (Map<String, Object>) Objects.requireNonNull(webClient.get()
+        Map<String, Object> result = fetchTickerData(market);
+
+        if (result == null) {
+            System.out.println("getTickerData() 반환값이 null, 다시 호출...");
+            return getTickerData(market); // 재귀 호출
+        }
+        return result;
+    }
+
+
+    @SuppressWarnings("all")
+    public Map<String, Object> fetchTickerData(String market) {
+
+        return (Map<String, Object>) webClient.get()
                 .uri(API_URL, uriBuilder -> uriBuilder
                         .path("/ticker")
                         .queryParam("markets", market)
                         .build())
                 .retrieve()
                 .bodyToMono(List.class)
-                .block())
+                .block()
                 .stream()
                 .map(data -> (Map<String, Object>) data)
                 .findFirst()

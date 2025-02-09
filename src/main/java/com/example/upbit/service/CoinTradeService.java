@@ -10,18 +10,20 @@ import org.springframework.stereotype.Service;
 
 import com.example.upbit.history.entity.TradeHis;
 import com.example.upbit.history.repository.CommonRepository;
-import com.example.upbit.history.repository.TradeHisRepository;
 import com.example.upbit.properties.TradeKeyProperties;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
 import static com.example.upbit.config.WebClientConfig.postSend;
 import static com.example.upbit.util.UUIDUtils.createUUID;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class CoinTradeService {
 
     //=======================================
@@ -62,7 +64,7 @@ public class CoinTradeService {
                 // 매매법에 따른 코인 가져오기
                 final String coin = getCoinService.findBuyTargets().get(0);
 
-                // 코인의 최초 현재 시장가
+                //코인의 최초 현재 시장가
                 final BigDecimal marketPrice = new BigDecimal(getCoinService
                         .getTickerData(coin)
                         .get(tradeKeyProperties.getTradePrice()).toString());
@@ -74,8 +76,11 @@ public class CoinTradeService {
                 // -0.13%
                 //final BigDecimal stopLossPrice = marketPrice.multiply(BigDecimal.valueOf(0.987));
 
-                placeMarketBuyOrder(TRADE_ENDPOINT, coin, START_BALANCE);
+                log.info("코인 : {} \n 시장가가 : {} \n 익절 가격 : {} \n 손절 가격 : {} \n 구입 금액 : {}");
 
+                //placeMarketBuyOrder(TRADE_ENDPOINT, coin, START_BALANCE);
+                testBuy(marketPrice);
+                
                 while (TRADING_ACTIVE) {
 
                     TimeUnit.SECONDS.sleep(1);
@@ -84,12 +89,17 @@ public class CoinTradeService {
                     BigDecimal currentPrice = new BigDecimal(getCoinService
                             .getTickerData(coin)
                             .get(tradeKeyProperties.getTradePrice()).toString());
+
+                    log.info("Current Price : {}", currentPrice);
                     
                     if (currentPrice.compareTo(profitPrice) >= 0) {
-                        placeMarketBuyOrder(TRADE_ENDPOINT, coin, START_BALANCE);
+                        //placeMarketBuyOrder(TRADE_ENDPOINT, coin, START_BALANCE);
+                        testSell(coin, marketPrice);
+                        saveTradeHis(coin, tradeId, START_BALANCE, TRADED_BALANCE);
                         break;
                     } else if (currentPrice.compareTo(lossPrice) <= 0) {
                         placeMarketSellOrder(TRADE_ENDPOINT, coin);
+                        testSell(coin, marketPrice);
                         break;
                     }
                 }
@@ -181,23 +191,33 @@ public class CoinTradeService {
         BALANCE_AFTER_SELL = BALANCE_AFTER_BUY.add(TRADED_BALANCE);
         // 남은 금액 업데이트
         BALANCE = BALANCE_AFTER_SELL;
+
+        // stop trading;
+        TRADING_ACTIVE = false;
     }
 
     public void saveTradeHis(final String coin, final String uuid,
-                            final BigDecimal starBalance, final BigDecimal tradedBalance){
+                            final BigDecimal startBalance, final BigDecimal tradedBalance){
         
-        BigDecimal diff = starBalance.subtract(tradedBalance);
+        final BigDecimal diff = startBalance.subtract(tradedBalance);
+
+        final String tradeResult = diff.compareTo(BigDecimal.ZERO) > 0 ? "PROFIT" : "LOSS";
         
-        TradeHis trade = TradeHis.builder()
+        final TradeHis trade = TradeHis.builder()
                                 .uuid(uuid)
                                 .coin(coin)
-                                .startAmount(starBalance.toPlainString())
+                                .startAmount(startBalance.toPlainString())
                                 .tradedAmount(tradedBalance.toPlainString())
-                                .type((diff.compareTo(BigDecimal.ZERO) > 0) ? "PROFIT":"LOSS")
+                                .type(tradeResult)
                                 .diffAmount(diff.toPlainString())
                                 .build();
                                 
         commonRepository.saveTrade(trade);
+
+        //==========================
+        // Do Message
+        // Slack or Telegram
+        //==========================
     }
 
 

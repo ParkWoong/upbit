@@ -24,10 +24,11 @@ trade:
         sell_price: sellPrice
         profit_margin: profitMargin
         loss_margin: lossMargin
-        trade_price: trade_price // 현재 지정가가
+        trade_price: trade_price
 upbit:
     # local 관리 필수
     access_key: accessKey
     secret_key: secretKey
 
         
+

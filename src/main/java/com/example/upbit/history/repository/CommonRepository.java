@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 @Repository
 @RequiredArgsConstructor
 public class CommonRepository {
+    
     private final TradeHisRepository tradeHisRepository;
 
     @Async
