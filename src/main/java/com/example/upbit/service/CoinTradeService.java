@@ -76,11 +76,11 @@ public class CoinTradeService {
                 // -0.13%
                 //final BigDecimal stopLossPrice = marketPrice.multiply(BigDecimal.valueOf(0.987));
 
-                log.info("코인 : {} \n 시장가가 : {} \n 익절 가격 : {} \n 손절 가격 : {} \n 구입 금액 : {}");
-
                 //placeMarketBuyOrder(TRADE_ENDPOINT, coin, START_BALANCE);
                 testBuy(marketPrice);
                 
+                log.info("코인 : {} \n 시장가가 : {} \n 익절 가격 : {} \n 손절 가격 : {} \n 구입 금액 : {}", coin, marketPrice, profitPrice, lossPrice, START_BALANCE);
+
                 while (TRADING_ACTIVE) {
 
                     TimeUnit.SECONDS.sleep(1);
