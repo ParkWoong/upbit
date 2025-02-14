@@ -1,5 +1,6 @@
 package com.example.upbit.service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -8,26 +9,47 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @RequiredArgsConstructor
 @SuppressWarnings("all")
 @Service
+@Slf4j
 public class ShortTermTrendCoinService {
     private final WebClient webClient;
 
-    /**
-     * 1. 거래량 상위 10개 코인 가져오기
-     */
-    public List<String> getTopTradedCoins() {
-        String url = "/ticker?markets=" + getAllMarkets();
-        
-        List<Map<String, Object>> response = webClient
-                                                    .get()
-                                                    .uri(url)
-                                                    .retrieve()
-                                                    .bodyToMono(List.class)
-                                                    .block();
+    private static final String API_URL = "https://api.upbit.com/v1";
 
+    // ===========================================
+    // 1. 거래량 상위 10개 코인 가져오기
+    // ===========================================
+    public List<String> getTopTradedCoins() {
+        
+        List<Map<String, Object>> response = new ArrayList<>();
+
+        for(String market : getAllMarkets()){
+
+            try {
+                Thread.sleep(100);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+
+            Map<String, Object> responseBody = (Map<String, Object>) webClient
+                                                .get()
+                                                .uri(API_URL.concat("/ticker?markets=").concat(market))
+                                                .retrieve()
+                                                .bodyToMono(List.class)
+                                                .block()
+                                                .stream()
+                                                .map(data -> (Map<String, Object>) data)
+                                                .findFirst()
+                                                .orElse(null);
+
+            if(response != null) response.add(responseBody);
+        }
+        
+         
         return response.stream()
                 .sorted((a, b) -> Double.compare(
                         (Double) b.get("acc_trade_volume_24h"),
@@ -45,8 +67,18 @@ public class ShortTermTrendCoinService {
         return topCoins.stream()
                 .filter(coin -> {
                     List<Map<String, Object>> candles = getCandleData(coin, "5", 7);
-                    double recentAvg = candles.subList(0, 5).stream().mapToDouble(c -> (Double) c.get("candle_acc_trade_volume")).average().orElse(0);
-                    double pastAvg = candles.subList(5, 7).stream().mapToDouble(c -> (Double) c.get("candle_acc_trade_volume")).average().orElse(0);
+                    double recentAvg = candles
+                                            .subList(0, 5)
+                                            .stream()
+                                            .mapToDouble(c -> (Double) c.get("candle_acc_trade_volume"))
+                                            .average().orElse(0);
+
+                    double pastAvg = candles
+                                            .subList(5, 7)
+                                            .stream()
+                                            .mapToDouble(c -> (Double) c.get("candle_acc_trade_volume"))
+                                            .average()
+                                            .orElse(0);
                     return recentAvg > pastAvg * 2;
                 })
                 .collect(Collectors.toList());
@@ -57,7 +89,13 @@ public class ShortTermTrendCoinService {
      */
     public List<String> getRSIFilteredCoins(List<String> coins) {
         return coins.stream()
-                .filter(coin -> calculateRSI(coin, 14) > 30)
+                .filter(coin -> {
+                    try {
+                        Thread.sleep(1000);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                    return (calculateRSI(coin, 14) > 30);})
                 .collect(Collectors.toList());
     }
 
@@ -76,7 +114,9 @@ public class ShortTermTrendCoinService {
      */
     public String findCoinsToTrade() {
         List<String> topCoins = getTopTradedCoins();
+        log.info("Top10 Coins : {}", topCoins);
         List<String> highVolumeCoins = getHighVolumeCoins(topCoins);
+        log.info("Hugh Volume Coins : {}", topCoins);
         List<String> rsiFilteredCoins = getRSIFilteredCoins(highVolumeCoins);
         return getOrderBookFilteredCoins(rsiFilteredCoins);
     }
@@ -86,7 +126,7 @@ public class ShortTermTrendCoinService {
      */
     private List<Map<String, Object>> getCandleData(String market, String unit, int count) {
         String url = String.format("/candles/minutes/%s?market=%s&count=%d", unit, market, count);
-        return webClient.get().uri(url)
+        return webClient.get().uri(API_URL.concat(url))
                 .retrieve()
                 .bodyToMono(List.class)
                 .block();
@@ -135,16 +175,16 @@ public class ShortTermTrendCoinService {
     /**
      * 📌 전체 코인 리스트 가져오기
      */
-    private String getAllMarkets() {
+    private List<String> getAllMarkets() {
         List<Map<String, Object>> response = webClient
                                                 .get()
-                                                .uri("/market/all")
+                                                .uri(API_URL.concat("/market/all"))
                                                 .retrieve()
                                                 .bodyToMono(List.class)
                                                 .block();
 
         return response.stream()
                 .map(data -> (String) data.get("market"))
-                .collect(Collectors.joining(","));
+                .collect(Collectors.toList());
     }
 }
