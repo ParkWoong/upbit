@@ -47,6 +47,7 @@ public class CoinTradeService {
 
     private final String TRADE_ENDPOINT = "https://api.upbit.com/v1/order";
     private final GetCoinService getCoinService;
+    private final ShortTermTrendCoinService shortTermTrendCoinService;
     private final TradeKeyProperties tradeKeyProperties;
     private final ObjectMapper objectMapper;
 
@@ -62,7 +63,12 @@ public class CoinTradeService {
                 if(startPrice != null) START_BALANCE = new BigDecimal(startPrice);
 
                 // 매매법에 따른 코인 가져오기
-                final String coin = getCoinService.findBuyTargets().get(0);
+                String coin = null;
+
+                do{
+                    coin = shortTermTrendCoinService.findCoinsToTrade();
+                }
+                while (coin != null);
 
                 //코인의 최초 현재 시장가
                 final BigDecimal marketPrice = new BigDecimal(getCoinService

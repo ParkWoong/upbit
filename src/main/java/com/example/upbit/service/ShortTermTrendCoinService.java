@@ -21,6 +21,19 @@ public class ShortTermTrendCoinService {
     private static final String API_URL = "https://api.upbit.com/v1";
 
     // ===========================================
+    // ✅ 최종 매수 대상 탐색
+    // ===========================================
+    public String findCoinsToTrade() {
+        List<String> topCoins = getTopTradedCoins();
+        log.info("Top10 Coins : {}", topCoins);
+        List<String> highVolumeCoins = getHighVolumeCoins(topCoins);
+        log.info("Hugh Volume Coins : {}", topCoins);
+        List<String> rsiFilteredCoins = getRSIFilteredCoins(highVolumeCoins);
+        log.info("Filtered RSI : {}", rsiFilteredCoins.toString());
+        return getOrderBookFilteredCoins(rsiFilteredCoins);
+    }
+
+    
     // 1. 거래량 상위 10개 코인 가져오기
     // ===========================================
     public List<String> getTopTradedCoins() {
@@ -60,13 +73,21 @@ public class ShortTermTrendCoinService {
                 .collect(Collectors.toList());
     }
 
-    /**
-     * 2. 최근 5분 평균 거래량이 과거 30분 평균보다 2배 증가한 코인 찾기
-     */
+    // ===========================================
+    // 2. 최근 5분 평균 거래량이 과거 30분 평균보다 2배 증가한 코인 찾기
+    // ===========================================
     public List<String> getHighVolumeCoins(List<String> topCoins) {
         return topCoins.stream()
                 .filter(coin -> {
+
+                    try {
+                        Thread.sleep(100);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+
                     List<Map<String, Object>> candles = getCandleData(coin, "5", 7);
+                    
                     double recentAvg = candles
                                             .subList(0, 5)
                                             .stream()
@@ -84,60 +105,58 @@ public class ShortTermTrendCoinService {
                 .collect(Collectors.toList());
     }
 
-    /**
-     * 3. RSI 값이 30 이상인 코인 필터링
-     */
+    // ===========================================
+    // 3. RSI 값이 30 이상인 코인 필터링
+    // ===========================================
     public List<String> getRSIFilteredCoins(List<String> coins) {
         return coins.stream()
-                .filter(coin -> {
+                .map(coin -> {
                     try {
-                        Thread.sleep(1000);
+                        Thread.sleep(100);
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
-                    return (calculateRSI(coin, 14) > 30);})
+                    return coin;
+                })
+                .filter(coin -> calculateRSI(coin, 14) > 30)
                 .collect(Collectors.toList());
     }
 
-    /**
-     * 4. 매수 주문량이 매도 주문량보다 큰 코인 필터링
-     */
+    // ===========================================
+    // 4. 매수 주문량이 매도 주문량보다 큰 코인 필터링
+    // ===========================================
     public String getOrderBookFilteredCoins(List<String> coins) {
         return coins.stream()
                 .filter(this::isBuyOrderMoreThanSell)
-                .collect(Collectors.toList())
-                .get(0);
+                .findFirst()
+                .orElse(null);
     }
 
-    /**
-     * ✅ 최종 매수 대상 탐색
-     */
-    public String findCoinsToTrade() {
-        List<String> topCoins = getTopTradedCoins();
-        log.info("Top10 Coins : {}", topCoins);
-        List<String> highVolumeCoins = getHighVolumeCoins(topCoins);
-        log.info("Hugh Volume Coins : {}", topCoins);
-        List<String> rsiFilteredCoins = getRSIFilteredCoins(highVolumeCoins);
-        return getOrderBookFilteredCoins(rsiFilteredCoins);
-    }
-
-    /**
-     * 📌 캔들 데이터 가져오기
-     */
+    // ===========================================
+    // <API>📌 캔들 데이터 가져오기
+    // ===========================================
     private List<Map<String, Object>> getCandleData(String market, String unit, int count) {
-        String url = String.format("/candles/minutes/%s?market=%s&count=%d", unit, market, count);
+
+        String url = String
+                        .format("/candles/minutes/%s?market=%s&count=%d", unit, market, count);
+       
         return webClient.get().uri(API_URL.concat(url))
                 .retrieve()
                 .bodyToMono(List.class)
                 .block();
     }
 
-    /**
-     * 📌 RSI 계산 로직
-     */
+    // ===========================================
+    // 📌 RSI 계산 로직
+    // ===========================================
     private double calculateRSI(String market, int period) {
-        List<Map<String, Object>> candles = getCandleData(market, "1", period * 2);
-        List<Double> closes = candles.stream().map(c -> (Double) c.get("trade_price")).collect(Collectors.toList());
+        
+        final List<Map<String, Object>> candles = getCandleData(market, "1", period * 2);
+        
+        final List<Double> closes = candles
+                                .stream()
+                                .map(c -> (Double) c.get("trade_price"))
+                                .collect(Collectors.toList());
 
         double avgGain = 0, avgLoss = 0;
         for (int i = 1; i < period + 1; i++) {
@@ -153,28 +172,49 @@ public class ShortTermTrendCoinService {
         return 100 - (100 / (1 + rs));
     }
 
-    /**
-     * 📌 매수 주문량 > 매도 주문량 체크
-     */
+    // ===========================================
+    // 📌 매수 주문량 > 매도 주문량 체크
+    // ===========================================
     private boolean isBuyOrderMoreThanSell(String market) {
-        String url = "/orderbook?markets=" + market;
-        List<Map<String, Object>> response = webClient.get().uri(url)
-                .retrieve()
-                .bodyToMono(List.class)
-                .block();
+        
+        final String url = "/orderbook?markets=" + market;
+        
+        final List<Map<String, Object>> response = webClient
+                                                    .get()
+                                                    .uri(API_URL.concat(url))
+                                                    .retrieve()
+                                                    .bodyToMono(List.class)
+                                                    .block();
 
         if (response == null || response.isEmpty()) return false;
 
-        List<Map<String, Object>> orderbookUnits = (List<Map<String, Object>>) response.get(0).get("orderbook_units");
-        double totalBidSize = orderbookUnits.stream().mapToDouble(o -> (Double) o.get("bid_size")).sum();
-        double totalAskSize = orderbookUnits.stream().mapToDouble(o -> (Double) o.get("ask_size")).sum();
+        List<Map<String, Object>> orderbookUnits = (List<Map<String, Object>>) response
+                                                                                    .get(0)
+                                                                                    .get("orderbook_units");
+
+        log.info("Coint : {}, \n MarketInfo : {}", market, orderbookUnits);
+
+
+        //bid_size
+        double totalBidSize = orderbookUnits
+                                        .stream()
+                                        .mapToDouble(o -> Double.parseDouble(o.get("bid_size").toString()))
+                                        .sum();
+
+        //ask_size
+        double totalAskSize = orderbookUnits
+                                        .stream()
+                                        .mapToDouble(o -> Double.parseDouble(o.get("ask_size").toString()))
+                                        .sum();
+
+        log.info("Coin : {}, 매수량 {}, 매도량 {}", market, totalBidSize, totalAskSize);
 
         return totalBidSize > totalAskSize;
     }
 
-    /**
-     * 📌 전체 코인 리스트 가져오기
-     */
+    // ===========================================
+    // 📌 전체 코인 리스트 가져오기
+    // ===========================================
     private List<String> getAllMarkets() {
         List<Map<String, Object>> response = webClient
                                                 .get()
