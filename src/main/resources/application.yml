@@ -29,6 +29,8 @@ upbit:
     # local 관리 필수
     access_key: accessKey
     secret_key: secretKey
+telegram:
+    url: https://api.telegram.org/bot${telegram.token}/sendMessage
 
         
 

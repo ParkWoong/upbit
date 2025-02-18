@@ -33,7 +33,7 @@ public class ShortTermTrendCoinService {
         return getOrderBookFilteredCoins(rsiFilteredCoins);
     }
 
-    
+    // ===========================================
     // 1. 거래량 상위 10개 코인 가져오기
     // ===========================================
     public List<String> getTopTradedCoins() {
@@ -106,7 +106,7 @@ public class ShortTermTrendCoinService {
     }
 
     // ===========================================
-    // 3. RSI 값이 30 이상인 코인 필터링
+    // 3. RSI 값이 50 이상인 코인 필터링
     // ===========================================
     public List<String> getRSIFilteredCoins(List<String> coins) {
         return coins.stream()
@@ -118,7 +118,7 @@ public class ShortTermTrendCoinService {
                     }
                     return coin;
                 })
-                .filter(coin -> calculateRSI(coin, 14) > 30)
+                .filter(coin -> calculateRSI(coin, 14) > 50)
                 .collect(Collectors.toList());
     }
 

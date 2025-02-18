@@ -50,6 +50,7 @@ public class CoinTradeService {
     private final ShortTermTrendCoinService shortTermTrendCoinService;
     private final TradeKeyProperties tradeKeyProperties;
     private final ObjectMapper objectMapper;
+    private static int CURRENT_COUNT = 0;
 
     private final CommonRepository commonRepository;
 
@@ -67,8 +68,9 @@ public class CoinTradeService {
 
                 do{
                     coin = shortTermTrendCoinService.findCoinsToTrade();
+                    log.info("Trade Coin : {}", coin);
                 }
-                while (coin != null);
+                while (coin == null);
 
                 //코인의 최초 현재 시장가
                 final BigDecimal marketPrice = new BigDecimal(getCoinService
@@ -85,7 +87,8 @@ public class CoinTradeService {
                 //placeMarketBuyOrder(TRADE_ENDPOINT, coin, START_BALANCE);
                 testBuy(marketPrice);
                 
-                log.info("코인 : {} \n 시장가가 : {} \n 익절 가격 : {} \n 손절 가격 : {} \n 구입 금액 : {}", coin, marketPrice, profitPrice, lossPrice, START_BALANCE);
+                log.info("\n 코인 : {} \n 시장가가 : {} \n 익절 가격 : {} \n 손절 가격 : {} \n 구입 금액 : {}", 
+                                    coin, marketPrice, profitPrice, lossPrice, START_BALANCE);
 
                 while (TRADING_ACTIVE) {
 
@@ -95,8 +98,9 @@ public class CoinTradeService {
                     BigDecimal currentPrice = new BigDecimal(getCoinService
                             .getTickerData(coin)
                             .get(tradeKeyProperties.getTradePrice()).toString());
-
-                    log.info("Current Price : {}", currentPrice);
+                            
+                    log.info("Current Price : {}, Call Count : {}", currentPrice, CURRENT_COUNT);
+                    CURRENT_COUNT ++;
                     
                     if (currentPrice.compareTo(profitPrice) >= 0) {
                         //placeMarketBuyOrder(TRADE_ENDPOINT, coin, START_BALANCE);
@@ -186,7 +190,8 @@ public class CoinTradeService {
         // 사용된 금액
         START_BALANCE = CURRENT_VOLMUE.multiply(marketPrice);
         // 매수 후 남은 금액
-        BALANCE = BALANCE.subtract(START_BALANCE);
+        BALANCE_AFTER_BUY = BALANCE.subtract(START_BALANCE);
+        BALANCE = BALANCE_AFTER_BUY;
 
     }
 
@@ -200,6 +205,8 @@ public class CoinTradeService {
 
         // stop trading;
         TRADING_ACTIVE = false;
+        // stop counting;
+        CURRENT_COUNT = 0;
     }
 
     public void saveTradeHis(final String coin, final String uuid,
