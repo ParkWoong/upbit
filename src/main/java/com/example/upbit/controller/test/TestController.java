@@ -8,13 +8,11 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.upbit.service.ShortTermTrendCoinService;
+import com.example.upbit.service.authorization.GetAccountService;
 import com.example.upbit.text.TelegramTextService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.web.bind.annotation.RequestParam;
-
-
 
 @RestController
 @RequiredArgsConstructor
@@ -23,6 +21,7 @@ public class TestController {
 
     private final ShortTermTrendCoinService shortTermTrendCoinService;
     private final TelegramTextService telegramTextService;
+    private final GetAccountService getAccountService;
     
     @GetMapping("/test")
     public void test() {
@@ -48,6 +47,12 @@ public class TestController {
     public boolean getMethodName() {
         return telegramTextService.sendText("Hello World!");
     }
+
+    @GetMapping("/authorization/test")
+    public String authTest() {
+        return getAccountService.getAccount().toString();
+    }
+    
     
     
 }

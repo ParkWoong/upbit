@@ -12,7 +12,7 @@ import lombok.RequiredArgsConstructor;
 public class CommonRepository {
     
     private final TradeHisRepository tradeHisRepository;
-
+    
     @Async
     public void saveTrade(TradeHis trade){
         tradeHisRepository.save(trade);

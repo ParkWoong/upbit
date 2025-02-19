@@ -29,6 +29,11 @@ upbit:
     # local 관리 필수
     access_key: accessKey
     secret_key: secretKey
+    endpoint:
+        base: https://api.upbit.com/v1
+        auth:
+            get_account: ${upbit.endpoint.base}/accounts
+            order: ${upbit.endpoint.base}/order
 telegram:
     url: https://api.telegram.org/bot${telegram.token}/sendMessage
 

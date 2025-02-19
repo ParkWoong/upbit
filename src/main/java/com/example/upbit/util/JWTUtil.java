@@ -54,23 +54,22 @@ public class JWTUtil {
         return token;
     }
 
-        // Set Hashed query
-        private static String generateQueryHash(String query) {
-            try {
-                MessageDigest md = MessageDigest.getInstance("SHA-512");
-                byte[] hashBytes = md.digest(query.getBytes());
-                return bytesToHex(hashBytes);
-            } catch (Exception e) {
-                throw new RuntimeException("Failed to generate query hash", e);
-            }
+    // Set Hashed query
+    private static String generateQueryHash(String query) {
+        try {
+            MessageDigest md = MessageDigest.getInstance("SHA-512");
+            byte[] hashBytes = md.digest(query.getBytes());
+            return bytesToHex(hashBytes);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to generate query hash", e);
         }
-    
-        private static String bytesToHex(byte[] bytes) {
-            StringBuilder sb = new StringBuilder();
-            for (byte b : bytes) {
-                sb.append(String.format("%02x", b));
-            }
-            return sb.toString();
-        }
+    }
 
+    private static String bytesToHex(byte[] bytes) {
+        StringBuilder sb = new StringBuilder();
+        for (byte b : bytes) {
+            sb.append(String.format("%02x", b));
+        }
+        return sb.toString();
+    }
 }

@@ -14,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 public class TelegramTextService {
     private final TelegramProperties telegramProperties;
     private final WebClient webClient;
+    
 
     public boolean sendText(final String message){
 
@@ -31,5 +32,26 @@ public class TelegramTextService {
         if(response.getStatusCode().is2xxSuccessful()) return true;
 
         return false;
-    } 
+    }
+
+    public String makeText(final String coin, final String type, final String remainBalance, final String tradedAmount){
+        
+        //======================================================================
+        // 메세지 형식
+        // [{coin} Profit / Loss] The transaction amount is {} , remain balance is {}
+        //=======================================================================
+        
+        StringBuilder sb = new StringBuilder();
+
+        sb.append("[")
+        .append(coin)
+        .append(" ")
+        .append(type)
+        .append("] The transaction amount is ")
+        .append(tradedAmount)
+        .append("and remain balance is ")
+        .append(remainBalance);        
+        
+        return null;   
+    }
 }

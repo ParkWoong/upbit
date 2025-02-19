@@ -6,11 +6,13 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import com.example.upbit.history.entity.TradeHis;
 import com.example.upbit.history.repository.CommonRepository;
 import com.example.upbit.properties.TradeKeyProperties;
+import com.example.upbit.text.TelegramTextService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -38,9 +40,11 @@ public class CoinTradeService {
 
     protected volatile static BigDecimal BALANCE = new BigDecimal("100000");
     protected volatile static BigDecimal START_BALANCE = new BigDecimal("100000");
+    // 
     protected volatile static BigDecimal TRADED_BALANCE;
     protected volatile static BigDecimal BALANCE_AFTER_BUY;
     protected volatile static BigDecimal BALANCE_AFTER_SELL;
+    protected volatile static boolean IS_TRADING = false;
     
     protected volatile boolean TRADING_ACTIVE = true; // 트레이딩 활성 상태
     protected volatile static BigDecimal CURRENT_VOLMUE;
@@ -50,6 +54,7 @@ public class CoinTradeService {
     private final ShortTermTrendCoinService shortTermTrendCoinService;
     private final TradeKeyProperties tradeKeyProperties;
     private final ObjectMapper objectMapper;
+    private final TelegramTextService telegramTextService;
     private static int CURRENT_COUNT = 0;
 
     private final CommonRepository commonRepository;
@@ -193,6 +198,8 @@ public class CoinTradeService {
         BALANCE_AFTER_BUY = BALANCE.subtract(START_BALANCE);
         BALANCE = BALANCE_AFTER_BUY;
 
+        IS_TRADING = true;
+
     }
 
     public void testSell(final String coin, final BigDecimal marketPrice){
@@ -204,10 +211,21 @@ public class CoinTradeService {
         BALANCE = BALANCE_AFTER_SELL;
 
         // stop trading;
-        TRADING_ACTIVE = false;
+        //TRADING_ACTIVE = false;
+        
+        //check either trading or not
+        IS_TRADING = false;
+        
         // stop counting;
         CURRENT_COUNT = 0;
     }
+
+    public boolean stopTrade(){
+        TRADING_ACTIVE = false;
+
+        return TRADING_ACTIVE;
+    }
+
 
     public void saveTradeHis(final String coin, final String uuid,
                             final BigDecimal startBalance, final BigDecimal tradedBalance){
@@ -231,6 +249,9 @@ public class CoinTradeService {
         // Do Message
         // Slack or Telegram
         //==========================
+        final String message = telegramTextService
+                                .makeText(coin, tradeResult, BALANCE_AFTER_SELL.toPlainString(), diff.toPlainString());
+        telegramTextService.sendText(message);
     }
 
 

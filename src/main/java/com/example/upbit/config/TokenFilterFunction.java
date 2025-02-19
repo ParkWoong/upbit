@@ -26,7 +26,7 @@ import reactor.core.publisher.Mono;
 public class TokenFilterFunction implements ExchangeFilterFunction {
 
     private final UpbitTokenProperties upbitTokenProperties;
-    private final static String tokenRequestEndPoint = "http://localhost:8080/requestBodyTest";
+    private final static String tokenRequestEndPoint = "https://api.upbit.com/v1/accounts";
     
     @Override
     @SuppressWarnings({ "method", "null" })

@@ -118,7 +118,7 @@ public class ShortTermTrendCoinService {
                     }
                     return coin;
                 })
-                .filter(coin -> calculateRSI(coin, 14) > 50)
+                .filter(coin -> calculateRSI(coin, 14) > 60)
                 .collect(Collectors.toList());
     }
 

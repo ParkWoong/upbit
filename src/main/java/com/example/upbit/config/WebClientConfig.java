@@ -88,10 +88,10 @@ public class WebClientConfig {
         return responseFromExternal;
     }
 
-    public static <R> ResponseEntity<?> getSend(final String endPoint,
+    public static <T> ResponseEntity<T> getSend(final String endPoint,
                                                 final HttpHeaders headers,
                                                 final MultiValueMap<String, String> params,
-                                                final ParameterizedTypeReference<R> responseType){
+                                                final ParameterizedTypeReference<T> responseType){
         return webClient.get()
                         .uri(endPoint, uriBuilder -> uriBuilder.queryParams(params).build())
                         .headers(h -> {

@@ -28,5 +28,11 @@ public class UpbitRestAPIController {
     public void doTrade(@RequestParam(name="price", required = false) final String startPrice) {
         coinTradeService.tryTrade(startPrice);
     }
+
+    @GetMapping("/stop/trade")
+    public String stopTrade() {
+        return "Trading Status is " + coinTradeService.stopTrade() + "";
+    }
+    
     
 }
