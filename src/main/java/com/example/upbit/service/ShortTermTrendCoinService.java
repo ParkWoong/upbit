@@ -17,7 +17,6 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class ShortTermTrendCoinService {
     private final WebClient webClient;
-
     private static final String API_URL = "https://api.upbit.com/v1";
 
     // ===========================================
@@ -106,7 +105,7 @@ public class ShortTermTrendCoinService {
     }
 
     // ===========================================
-    // 3. RSI 값이 50 이상인 코인 필터링
+    // 3. RSI 값이 60 이상인 코인 필터링
     // ===========================================
     public List<String> getRSIFilteredCoins(List<String> coins) {
         return coins.stream()
@@ -192,8 +191,6 @@ public class ShortTermTrendCoinService {
                                                                                     .get(0)
                                                                                     .get("orderbook_units");
 
-        log.info("Coint : {}, \n MarketInfo : {}", market, orderbookUnits);
-
 
         //bid_size
         double totalBidSize = orderbookUnits
@@ -207,7 +204,6 @@ public class ShortTermTrendCoinService {
                                         .mapToDouble(o -> Double.parseDouble(o.get("ask_size").toString()))
                                         .sum();
 
-        log.info("Coin : {}, 매수량 {}, 매도량 {}", market, totalBidSize, totalAskSize);
 
         return totalBidSize > totalAskSize;
     }

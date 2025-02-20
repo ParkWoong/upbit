@@ -4,6 +4,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.example.upbit.service.CoinTradeService;
 import com.example.upbit.service.GetCoinService;
+import com.example.upbit.service.event.StopTradeService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -18,6 +19,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 public class UpbitRestAPIController {
     private final GetCoinService getCoinService;
     private final CoinTradeService coinTradeService;
+    private final StopTradeService stopTradeService;
 
     @GetMapping("/api/get/filteringCoin")
     public String getFilteringCoin() {
@@ -31,7 +33,7 @@ public class UpbitRestAPIController {
 
     @GetMapping("/stop/trade")
     public String stopTrade() {
-        return "Trading Status is " + coinTradeService.stopTrade() + "";
+        return "Trading Status is " + stopTradeService.stopTrade() + "";
     }
     
     

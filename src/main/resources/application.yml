@@ -33,7 +33,7 @@ upbit:
         base: https://api.upbit.com/v1
         auth:
             get_account: ${upbit.endpoint.base}/accounts
-            order: ${upbit.endpoint.base}/order
+            order: ${upbit.endpoint.base}/orders
 telegram:
     url: https://api.telegram.org/bot${telegram.token}/sendMessage
 

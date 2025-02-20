@@ -13,6 +13,7 @@ import org.springframework.web.reactive.function.client.ExchangeFilterFunction;
 import org.springframework.web.reactive.function.client.ExchangeFunction;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import com.example.upbit.properties.AuthEndPointProperties;
 import com.example.upbit.properties.UpbitTokenProperties;
 import com.example.upbit.util.JWTUtil;
 
@@ -26,17 +27,20 @@ import reactor.core.publisher.Mono;
 public class TokenFilterFunction implements ExchangeFilterFunction {
 
     private final UpbitTokenProperties upbitTokenProperties;
-    private final static String tokenRequestEndPoint = "https://api.upbit.com/v1/accounts";
+    private final AuthEndPointProperties authEndPointProperties;
     
     @Override
     @SuppressWarnings({ "method", "null" })
     public Mono<ClientResponse> filter(ClientRequest request, ExchangeFunction next) {
 
-        final String endPoint = request.url().toString();
+        final String endPoint = "https://".concat(request.url().getHost()).concat(request.url().getPath());
 
-        //log.info("URL : {}", endPoint);
+        log.info("URL : {}", endPoint);
 
-        if(endPoint.equals(tokenRequestEndPoint)){
+        //log.info("Set : {}", authEndPointProperties.getAuthEndPoint().toString());
+        //log.info("Boolean : {}", authEndPointProperties.getAuthEndPoint().contains(endPoint));
+
+        if(authEndPointProperties.getAuthEndPoint().contains(endPoint)){
             log.info("====== {} needs JWT token ======", endPoint);
             
             // 1. GET 요청: 쿼리 파라미터 추출
@@ -88,6 +92,8 @@ public class TokenFilterFunction implements ExchangeFilterFunction {
 
             else if (request.method() == HttpMethod.POST) {
 
+                log.info("Post Request : {}", getQueryFromRequest(request));
+
                 // 원본 요청 Body를 복제하기 위해 로컬 환경 복제 API 호출출
                 // for ClientRequest -> ClientResponse
                 return next
@@ -100,9 +106,11 @@ public class TokenFilterFunction implements ExchangeFilterFunction {
                                 String jwt = JWTUtil.makeToken(
                                     upbitTokenProperties.getAccessKey(),
                                     upbitTokenProperties.getSecretKey(),
-                                    bodyContent
+                                    getQueryFromRequest(request)
                                 );
-        
+                                
+                                log.info("Request URI : {}, Request Body : {}",endPoint, bodyContent);
+
                                 // 새 요청 생성 (기존 Body 유지)
                                 ClientRequest newRequest = ClientRequest.from(request)
                                     .url(URI.create(endPoint))

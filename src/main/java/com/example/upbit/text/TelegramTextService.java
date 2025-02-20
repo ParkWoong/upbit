@@ -52,6 +52,6 @@ public class TelegramTextService {
         .append("and remain balance is ")
         .append(remainBalance);        
         
-        return null;   
+        return sb.toString();   
     }
 }

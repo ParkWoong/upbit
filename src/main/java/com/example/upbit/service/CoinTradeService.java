@@ -11,7 +11,9 @@ import org.springframework.stereotype.Service;
 
 import com.example.upbit.history.entity.TradeHis;
 import com.example.upbit.history.repository.CommonRepository;
+import com.example.upbit.properties.AuthEndPointProperties;
 import com.example.upbit.properties.TradeKeyProperties;
+import com.example.upbit.service.event.TradingStatus;
 import com.example.upbit.text.TelegramTextService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
@@ -40,33 +42,34 @@ public class CoinTradeService {
 
     protected volatile static BigDecimal BALANCE = new BigDecimal("100000");
     protected volatile static BigDecimal START_BALANCE = new BigDecimal("100000");
-    // 
+
     protected volatile static BigDecimal TRADED_BALANCE;
     protected volatile static BigDecimal BALANCE_AFTER_BUY;
     protected volatile static BigDecimal BALANCE_AFTER_SELL;
-    protected volatile static boolean IS_TRADING = false;
-    
-    protected volatile boolean TRADING_ACTIVE = true; // 트레이딩 활성 상태
-    protected volatile static BigDecimal CURRENT_VOLMUE;
+    public volatile static BigDecimal CURRENT_VOLMUE;
 
-    private final String TRADE_ENDPOINT = "https://api.upbit.com/v1/order";
+    //private final String TRADE_ENDPOINT = "https://api.upbit.com/v1/order";
     private final GetCoinService getCoinService;
     private final ShortTermTrendCoinService shortTermTrendCoinService;
     private final TradeKeyProperties tradeKeyProperties;
     private final ObjectMapper objectMapper;
     private final TelegramTextService telegramTextService;
+    private final TradingStatus tradingStatus;
+    private final AuthEndPointProperties authEndPointProperties;
+
+    
     private static int CURRENT_COUNT = 0;
 
     private final CommonRepository commonRepository;
 
     public boolean tryTrade(final String startPrice) {
 
-        while (TRADING_ACTIVE) {
+        while (tradingStatus.isTRADING_ACTIVE()) {
 
             final String tradeId = createUUID();
 
             try {
-                if(startPrice != null) START_BALANCE = new BigDecimal(startPrice);
+                if(startPrice != null) BALANCE = new BigDecimal(startPrice);
 
                 // 매매법에 따른 코인 가져오기
                 String coin = null;
@@ -95,7 +98,7 @@ public class CoinTradeService {
                 log.info("\n 코인 : {} \n 시장가가 : {} \n 익절 가격 : {} \n 손절 가격 : {} \n 구입 금액 : {}", 
                                     coin, marketPrice, profitPrice, lossPrice, START_BALANCE);
 
-                while (TRADING_ACTIVE) {
+                while (tradingStatus.isTRADING_ACTIVE()) {
 
                     TimeUnit.SECONDS.sleep(1);
                     // 1초마다 확인
@@ -108,13 +111,14 @@ public class CoinTradeService {
                     CURRENT_COUNT ++;
                     
                     if (currentPrice.compareTo(profitPrice) >= 0) {
-                        //placeMarketBuyOrder(TRADE_ENDPOINT, coin, START_BALANCE);
+                        //placeMarketBuyOrder(authEndPointProperties.getOrder(), coin, START_BALANCE);
                         testSell(coin, marketPrice);
                         saveTradeHis(coin, tradeId, START_BALANCE, TRADED_BALANCE);
                         break;
                     } else if (currentPrice.compareTo(lossPrice) <= 0) {
-                        placeMarketSellOrder(TRADE_ENDPOINT, coin);
+                        //placeMarketSellOrder(authEndPointProperties.getOrder(), coin);
                         testSell(coin, marketPrice);
+                        saveTradeHis(coin, tradeId, START_BALANCE, TRADED_BALANCE);
                         break;
                     }
                 }
@@ -198,7 +202,7 @@ public class CoinTradeService {
         BALANCE_AFTER_BUY = BALANCE.subtract(START_BALANCE);
         BALANCE = BALANCE_AFTER_BUY;
 
-        IS_TRADING = true;
+        tradingStatus.setIS_TRADING(true);
 
     }
 
@@ -214,25 +218,20 @@ public class CoinTradeService {
         //TRADING_ACTIVE = false;
         
         //check either trading or not
-        IS_TRADING = false;
+        tradingStatus.setIS_TRADING(false);
         
         // stop counting;
         CURRENT_COUNT = 0;
     }
 
-    public boolean stopTrade(){
-        TRADING_ACTIVE = false;
-
-        return TRADING_ACTIVE;
-    }
-
-
     public void saveTradeHis(final String coin, final String uuid,
                             final BigDecimal startBalance, final BigDecimal tradedBalance){
         
-        final BigDecimal diff = startBalance.subtract(tradedBalance);
+        final BigDecimal diff = tradedBalance.subtract(startBalance); 
 
         final String tradeResult = diff.compareTo(BigDecimal.ZERO) > 0 ? "PROFIT" : "LOSS";
+
+        log.info("diff : {}", diff.toPlainString());
         
         final TradeHis trade = TradeHis.builder()
                                 .uuid(uuid)
@@ -251,6 +250,9 @@ public class CoinTradeService {
         //==========================
         final String message = telegramTextService
                                 .makeText(coin, tradeResult, BALANCE_AFTER_SELL.toPlainString(), diff.toPlainString());
+        
+        log.info("Message : {}", message);
+
         telegramTextService.sendText(message);
     }
 

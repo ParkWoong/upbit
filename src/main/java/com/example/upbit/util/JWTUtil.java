@@ -1,5 +1,6 @@
 package com.example.upbit.util;
 
+import java.math.BigInteger;
 import java.security.Key;
 import java.security.MessageDigest;
 import java.util.HashMap;
@@ -58,8 +59,9 @@ public class JWTUtil {
     private static String generateQueryHash(String query) {
         try {
             MessageDigest md = MessageDigest.getInstance("SHA-512");
-            byte[] hashBytes = md.digest(query.getBytes());
-            return bytesToHex(hashBytes);
+            md.update(query.getBytes("UTF-8"));
+            String queryHash = String.format("%0128x", new BigInteger(1, md.digest()));
+            return queryHash;
         } catch (Exception e) {
             throw new RuntimeException("Failed to generate query hash", e);
         }

@@ -7,12 +7,15 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.example.upbit.properties.AuthEndPointProperties;
 import com.example.upbit.service.ShortTermTrendCoinService;
 import com.example.upbit.service.authorization.GetAccountService;
+import com.example.upbit.service.authorization.TradeService;
 import com.example.upbit.text.TelegramTextService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
 
 @RestController
 @RequiredArgsConstructor
@@ -22,6 +25,8 @@ public class TestController {
     private final ShortTermTrendCoinService shortTermTrendCoinService;
     private final TelegramTextService telegramTextService;
     private final GetAccountService getAccountService;
+    private final TradeService tradeService;
+    private final AuthEndPointProperties authEndPointProperties;
     
     @GetMapping("/test")
     public void test() {
@@ -38,11 +43,6 @@ public class TestController {
         return "TRUE";
     }
 
-    @PostMapping("/local/return")
-    public byte[] returnData(@RequestBody byte[] entity) {
-        return entity;
-    }
-
     @GetMapping("/text/test")
     public boolean getMethodName() {
         return telegramTextService.sendText("Hello World!");
@@ -53,6 +53,15 @@ public class TestController {
         return getAccountService.getAccount().toString();
     }
     
+    @GetMapping("/test/trade")
+    public String testTrade() {
+        return tradeService.placeMarketBuyOrder(authEndPointProperties.getOrder(), "KRW-BERA", "100000").toString();
+    }
+
+    @PostMapping("/local/return")
+    public byte[] returnData(@RequestBody byte[] entity) {
+        return entity;
+    }
     
     
 }
