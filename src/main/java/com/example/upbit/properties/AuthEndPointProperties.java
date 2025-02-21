@@ -17,10 +17,11 @@ import lombok.Setter;
 public class AuthEndPointProperties {
     private String getAccount;
     private String order;
+    private String uuid;
 
     public Set<String> getAuthEndPoint(){
         return Arrays
-                .asList(this.getAccount, this.order)
+                .asList(this.getAccount, this.order, this.uuid)
                 .stream()
                 .collect(Collectors.toSet());
     }

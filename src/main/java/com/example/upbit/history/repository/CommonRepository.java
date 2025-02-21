@@ -1,6 +1,5 @@
 package com.example.upbit.history.repository;
 
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Repository;
 
 import com.example.upbit.history.entity.TradeHis;

@@ -34,6 +34,7 @@ upbit:
         auth:
             get_account: ${upbit.endpoint.base}/accounts
             order: ${upbit.endpoint.base}/orders
+            uuid: ${upbit.endpoint.base}/orders/uuid
 telegram:
     url: https://api.telegram.org/bot${telegram.token}/sendMessage
 

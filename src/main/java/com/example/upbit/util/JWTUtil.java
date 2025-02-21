@@ -67,11 +67,15 @@ public class JWTUtil {
         }
     }
 
-    private static String bytesToHex(byte[] bytes) {
-        StringBuilder sb = new StringBuilder();
-        for (byte b : bytes) {
-            sb.append(String.format("%02x", b));
-        }
-        return sb.toString();
+    public static void main(String[] args) {
+        System.out.println(generateQueryHash("market=KRW-JTO&side=ask&volume=0&ord_type=market"));
     }
+
+    // private static String bytesToHex(byte[] bytes) {
+    //     StringBuilder sb = new StringBuilder();
+    //     for (byte b : bytes) {
+    //         sb.append(String.format("%02x", b));
+    //     }
+    //     return sb.toString();
+    // }
 }

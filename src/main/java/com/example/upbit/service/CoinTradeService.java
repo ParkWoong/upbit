@@ -2,11 +2,8 @@ package com.example.upbit.service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import com.example.upbit.history.entity.TradeHis;
@@ -15,14 +12,10 @@ import com.example.upbit.properties.AuthEndPointProperties;
 import com.example.upbit.properties.TradeKeyProperties;
 import com.example.upbit.service.event.TradingStatus;
 import com.example.upbit.text.TelegramTextService;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-import static com.example.upbit.config.WebClientConfig.postSend;
 import static com.example.upbit.util.UUIDUtils.createUUID;
 
 @Service
@@ -46,13 +39,11 @@ public class CoinTradeService {
     protected volatile static BigDecimal TRADED_BALANCE;
     protected volatile static BigDecimal BALANCE_AFTER_BUY;
     protected volatile static BigDecimal BALANCE_AFTER_SELL;
-    public volatile static BigDecimal CURRENT_VOLMUE;
+    public volatile static BigDecimal CURRENT_VOLMUE = new BigDecimal(0);
 
-    //private final String TRADE_ENDPOINT = "https://api.upbit.com/v1/order";
     private final GetCoinService getCoinService;
     private final ShortTermTrendCoinService shortTermTrendCoinService;
     private final TradeKeyProperties tradeKeyProperties;
-    private final ObjectMapper objectMapper;
     private final TelegramTextService telegramTextService;
     private final TradingStatus tradingStatus;
     private final AuthEndPointProperties authEndPointProperties;
@@ -131,63 +122,6 @@ public class CoinTradeService {
 
         return false;
 
-    }
-
-    // ========================================================
-    // 1. 시장가 매수 (KRW 기준 금액만큼 매수)
-    // ========================================================
-    @SuppressWarnings("unchecked")
-    public Map<String, Object> placeMarketBuyOrder(String endPoint, String market, BigDecimal amount) {
-
-        Map<String, String> requestBody = new HashMap<>();
-        requestBody.put("market", market);
-        requestBody.put("side", "bid"); // 매수
-        requestBody.put("price", amount.toPlainString());
-        requestBody.put("ord_type", "price");
-
-        final String responseBody = postSend(endPoint, null, requestBody, null).getBody();
-
-        Map<String, Object> resultMap = new HashMap<>();
-
-        try {
-            resultMap = objectMapper.readValue(responseBody, Map.class);
-        } catch (JsonMappingException e) {
-            e.printStackTrace();
-        } catch (JsonProcessingException e) {
-            e.printStackTrace();
-        }
-
-        CURRENT_VOLMUE = new BigDecimal(resultMap.get("executed_volume").toString());
-
-        return resultMap;
-    }
-
-    // =====================================================================
-    // 2. 지정가 매도 (보유한 모든 코인을 특정 가격에 매도)
-    // =====================================================================
-    public void placeLimitSellOrder(String endPoint, String market, BigDecimal price) {
-
-        Map<String, String> requestBody = new HashMap<>();
-        requestBody.put("market", market);
-        requestBody.put("side", "ask"); // 매도
-        requestBody.put("volume", CURRENT_VOLMUE.toPlainString()); // 보유한 코인 개수
-        requestBody.put("price", price.toPlainString()); // 지정된 가격
-        requestBody.put("ord_type", "limit"); // 지정가 매도
-
-        postSend(endPoint, null, requestBody, null);
-    }
-
-    // =====================================================================
-    // 3. 시장가 매도(즉시 시장가에 가지고 있는 모든 코인을 매도)
-    // =====================================================================
-    public void placeMarketSellOrder(String endPoint, String market) {
-        Map<String, String> requestBody = new HashMap<>();
-        requestBody.put("market", market);
-        requestBody.put("side", "ask"); // 매도
-        requestBody.put("volume", CURRENT_VOLMUE.toPlainString()); // 보유한 코인 개수
-        requestBody.put("ord_type", "market"); // 시장가 매도
-
-        postSend(endPoint, null, requestBody, null);
     }
 
     //===================

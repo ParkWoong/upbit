@@ -4,17 +4,14 @@ import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.springframework.core.ParameterizedTypeReference;
+
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
-import org.springframework.web.client.HttpClientErrorException;
-import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 
 import com.example.upbit.service.CoinTradeService;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import static com.example.upbit.config.WebClientConfig.postSend;
 
@@ -26,12 +23,14 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class TradeService {
 
-    private final ObjectMapper objectMapper;
+    private final GetInfoService getInfoService;
+
+    private final static ParameterizedTypeReference<Map<String, Object>> MAP_TYPE = 
+                                                new ParameterizedTypeReference<Map<String,Object>>() {};
 
     // ========================================================
     // 1. 시장가 매수 (KRW 기준 금액만큼 매수)
     // ========================================================
-    @SuppressWarnings("unchecked")
     public Map<String, Object> placeMarketBuyOrder(String endPoint, String market, String amount) {
 
         MultiValueMap<String, String> param = new LinkedMultiValueMap<>();
@@ -48,36 +47,88 @@ public class TradeService {
 
 
 
-        String responseBody =  null ;
+        Map<String, Object>responseBody =  new HashMap<>();
 
         try {
-            responseBody = postSend(endPoint, null, requestBody, param).getBody();    
+            responseBody = postSend(endPoint, null, requestBody, param, MAP_TYPE).getBody();    
         } catch(WebClientResponseException e){
-            Map<String, String> errorResponse = e.getResponseBodyAs(Map.class);
-
-            log.info("{}", errorResponse);
+            responseBody = e.getResponseBodyAs(MAP_TYPE);
+            return responseBody;
         } 
-        catch (HttpClientErrorException | HttpServerErrorException e) {
-            log.info("{}", e.getStatusCode());
 
-            Map<String, String> errorResponse = e.getResponseBodyAs(Map.class);
+        String tradeStatus = null;
+        String tradeVolume = null;
 
-            log.info("{}", errorResponse);
+        Map<String, Object> coinTradeStatue = null;
+
+        if(responseBody != null){
+                        
+            final String uuid = responseBody.get("uuid").toString();
+
+            do {
+                coinTradeStatue = getInfoService
+                                        .getCoinTradeInfo(market, uuid);
+
+                if(coinTradeStatue.containsKey("status")){
+                    tradeStatus = String.valueOf(coinTradeStatue.get("status"));
+                    tradeVolume = String.valueOf(coinTradeStatue.get("executed_volume"));
+                }
+
+            } while (tradeStatus == null || !tradeStatus.equals("done"));            
         }
         
+        CoinTradeService.CURRENT_VOLMUE = new BigDecimal(tradeVolume);
 
-        Map<String, Object> resultMap = new HashMap<>();
+        return coinTradeStatue;
+    }
+
+    // =====================================================================
+    // 2. 시장가 매도(즉시 시장가에 가지고 있는 모든 코인을 매도)
+    // =====================================================================
+    public Map<String, Object> placeMarketSellOrder(String endPoint, String market) {
+
+        MultiValueMap<String, String> requestParam = new LinkedMultiValueMap<>();
+        requestParam.add("market", market);
+        requestParam.add("side", "ask"); // 매도
+        requestParam.add("volume", "1"); // 보유한 코인 개수
+        //requestParam.add("volume", CoinTradeService.CURRENT_VOLMUE.toPlainString()); // 보유한 코인 개수
+        requestParam.add("ord_type", "market"); // 시장가 매도
+
+        Map<String, String> requestBody = new HashMap<>();
+        requestBody.put("market", market);
+        requestBody.put("side", "ask"); // 매도
+        requestBody.put("volume", "1"); // 보유한 코인 개수
+        //requestBody.put("volume", CoinTradeService.CURRENT_VOLMUE.toPlainString()); // 보유한 코인 개수
+        requestBody.put("ord_type", "market"); // 시장가 매도
+
+        Map<String, Object> responseBody = null;
 
         try {
-            resultMap = objectMapper.readValue(responseBody, Map.class);
-        } catch (JsonMappingException e) {
-            e.printStackTrace();
-        } catch (JsonProcessingException e) {
-            e.printStackTrace();
+            responseBody = postSend(endPoint, null, requestBody, requestParam, MAP_TYPE).getBody();
+        } catch (WebClientResponseException e) {
+            responseBody = e.getResponseBodyAs(MAP_TYPE);
+            return responseBody;
         }
 
-        CoinTradeService.CURRENT_VOLMUE = new BigDecimal(resultMap.get("executed_volume").toString());
+        String tradeStatus = null;
 
-        return resultMap;
+        Map<String, Object> coinTradeStatue = null;
+
+        if(responseBody != null){
+                        
+            final String uuid = responseBody.get("uuid").toString();
+
+            do {
+                coinTradeStatue = getInfoService
+                                        .getCoinTradeInfo(market, uuid);
+
+                if(coinTradeStatue.containsKey("status")){
+                    tradeStatus = coinTradeStatue.get("status").toString();                
+                }
+            } while (tradeStatus == null || !tradeStatus.equals("done"));            
+        }
+
+        return coinTradeStatue;
+
     }
 }

@@ -35,11 +35,6 @@ public class TokenFilterFunction implements ExchangeFilterFunction {
 
         final String endPoint = "https://".concat(request.url().getHost()).concat(request.url().getPath());
 
-        log.info("URL : {}", endPoint);
-
-        //log.info("Set : {}", authEndPointProperties.getAuthEndPoint().toString());
-        //log.info("Boolean : {}", authEndPointProperties.getAuthEndPoint().contains(endPoint));
-
         if(authEndPointProperties.getAuthEndPoint().contains(endPoint)){
             log.info("====== {} needs JWT token ======", endPoint);
             
@@ -49,8 +44,6 @@ public class TokenFilterFunction implements ExchangeFilterFunction {
                 String jwt = JWTUtil.makeToken(upbitTokenProperties.getAccessKey(),
                                                 upbitTokenProperties.getSecretKey(),
                                                 getQueryFromRequest(request));
-
-                //log.info("JWT : {}", jwt);
                 
                 return next.exchange(withAuthHeader(request, jwt));
             }
@@ -92,7 +85,11 @@ public class TokenFilterFunction implements ExchangeFilterFunction {
 
             else if (request.method() == HttpMethod.POST) {
 
-                log.info("Post Request : {}", getQueryFromRequest(request));
+                
+
+                final String query = getQueryFromRequest(request);
+
+                log.info("Post Request : {}", query);
 
                 // 원본 요청 Body를 복제하기 위해 로컬 환경 복제 API 호출출
                 // for ClientRequest -> ClientResponse
@@ -106,10 +103,10 @@ public class TokenFilterFunction implements ExchangeFilterFunction {
                                 String jwt = JWTUtil.makeToken(
                                     upbitTokenProperties.getAccessKey(),
                                     upbitTokenProperties.getSecretKey(),
-                                    getQueryFromRequest(request)
+                                    query
                                 );
                                 
-                                log.info("Request URI : {}, Request Body : {}",endPoint, bodyContent);
+                                log.info("Request URI : {}, Request Body : {}", endPoint, bodyContent);
 
                                 // 새 요청 생성 (기존 Body 유지)
                                 ClientRequest newRequest = ClientRequest.from(request)
@@ -131,7 +128,6 @@ public class TokenFilterFunction implements ExchangeFilterFunction {
                 .build();
         }
 
-    // GET 요청의 쿼리 파라미터 추출
     private String getQueryFromRequest(ClientRequest request) {
         return UriComponentsBuilder.fromUri(request.url())
                 .build()

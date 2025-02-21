@@ -60,15 +60,14 @@ public class WebClientConfig {
         return webClient = webClient(defaultHttpClient());
     }
 
-    public static <T> ResponseEntity<String> postSend(
+    public static <T,R> ResponseEntity<T> postSend(
                         final String endPoint,
                         final HttpHeaders headers,
-                        final T requestBody,
-                        final MultiValueMap<String, String> params) {
-                                
-        log.info("  SERVICE) Call Post API endPoint : {}", endPoint);
+                        final R requestBody,
+                        final MultiValueMap<String, String> params,
+                        final ParameterizedTypeReference<T> responseType) {
 
-        ResponseEntity<String> responseFromExternal = webClient
+        ResponseEntity<T> responseFromExternal = webClient
                         .post()
                         .uri(endPoint, uriBuilder ->
                                     uriBuilder.queryParams(params).build())
@@ -81,7 +80,7 @@ public class WebClientConfig {
                         //body(new CachingBodyInserter<>(BodyInserters.fromValue(requestBody)))
                         .bodyValue(requestBody!=null?requestBody:EMPTY_BODY)
                         .retrieve()
-                        .toEntity(String.class)
+                        .toEntity(responseType)
                         .block();
 
 
