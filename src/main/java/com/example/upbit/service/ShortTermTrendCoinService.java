@@ -85,6 +85,10 @@ public class ShortTermTrendCoinService {
                         e.printStackTrace();
                     }
 
+                    // When calculating the 30-minute average candle, 
+                    // you need to get at least 7 candles because the 6th and 7th candles represent the trading volumes of the 30th and 35th minutes.
+                    // So If you need 1-hours average candle,
+                    // you need to get at least 17 candle
                     List<Map<String, Object>> candles = getCandleData(coin, "5", 7);
                     
                     double recentAvg = candles
