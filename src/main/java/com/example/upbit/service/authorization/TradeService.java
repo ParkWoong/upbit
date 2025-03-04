@@ -45,8 +45,6 @@ public class TradeService {
         requestBody.put("price", amount);
         requestBody.put("ord_type", "price");
 
-
-
         Map<String, Object>responseBody =  new HashMap<>();
 
         try {
@@ -69,8 +67,8 @@ public class TradeService {
                 coinTradeStatue = getInfoService
                                         .getCoinTradeInfo(market, uuid);
 
-                if(coinTradeStatue.containsKey("status")){
-                    tradeStatus = String.valueOf(coinTradeStatue.get("status"));
+                if(coinTradeStatue.containsKey("state")){
+                    tradeStatus = String.valueOf(coinTradeStatue.get("state"));
                     tradeVolume = String.valueOf(coinTradeStatue.get("executed_volume"));
                 }
 
@@ -90,21 +88,21 @@ public class TradeService {
         MultiValueMap<String, String> requestParam = new LinkedMultiValueMap<>();
         requestParam.add("market", market);
         requestParam.add("side", "ask"); // 매도
-        requestParam.add("volume", "1"); // 보유한 코인 개수
+        requestParam.add("volume", "2"); // 보유한 코인 개수
         //requestParam.add("volume", CoinTradeService.CURRENT_VOLMUE.toPlainString()); // 보유한 코인 개수
         requestParam.add("ord_type", "market"); // 시장가 매도
 
-        // Map<String, String> requestBody = new HashMap<>();
-        // requestBody.put("market", market);
-        // requestBody.put("side", "ask"); // 매도
-        // requestBody.put("volume", "1"); // 보유한 코인 개수
-        // //requestBody.put("volume", CoinTradeService.CURRENT_VOLMUE.toPlainString()); // 보유한 코인 개수
-        // requestBody.put("ord_type", "market"); // 시장가 매도
+        Map<String, String> requestBody = new HashMap<>();
+        requestBody.put("market", market);
+        requestBody.put("side", "ask"); // 매도
+        requestBody.put("volume", "1"); // 보유한 코인 개수
+        //requestBody.put("volume", CoinTradeService.CURRENT_VOLMUE.toPlainString()); // 보유한 코인 개수
+        requestBody.put("ord_type", "market"); // 시장가 매도
 
         Map<String, Object> responseBody = null;
 
         try {
-            responseBody = postSend(endPoint, null, null, requestParam, MAP_TYPE).getBody();
+            responseBody = postSend(endPoint, null, requestBody, requestParam, MAP_TYPE).getBody();
         } catch (WebClientResponseException e) {
             responseBody = e.getResponseBodyAs(MAP_TYPE);
             return responseBody;
@@ -122,13 +120,13 @@ public class TradeService {
                 coinTradeStatue = getInfoService
                                         .getCoinTradeInfo(market, uuid);
 
-                if(coinTradeStatue.containsKey("status")){
-                    tradeStatus = coinTradeStatue.get("status").toString();                
+                if(coinTradeStatue.containsKey("state")){
+                    tradeStatus = coinTradeStatue.get("state").toString();                
                 }
             } while (tradeStatus == null || !tradeStatus.equals("done"));            
         }
 
-        return coinTradeStatue;
+        return responseBody;
 
     }
 }

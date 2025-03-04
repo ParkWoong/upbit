@@ -19,7 +19,7 @@ public class JWTUtil {
     
     //================================
     // When API required 
-    // GET requeest with query string 
+    // GET request with query string 
     // or POST request with request body
     // , REST API should set query or request data maked Hash argorithm in JWT Token
     //================================
@@ -66,16 +66,4 @@ public class JWTUtil {
             throw new RuntimeException("Failed to generate query hash", e);
         }
     }
-
-    public static void main(String[] args) {
-        System.out.println(generateQueryHash("market=KRW-JTO&side=ask&volume=0&ord_type=market"));
-    }
-
-    // private static String bytesToHex(byte[] bytes) {
-    //     StringBuilder sb = new StringBuilder();
-    //     for (byte b : bytes) {
-    //         sb.append(String.format("%02x", b));
-    //     }
-    //     return sb.toString();
-    // }
 }

@@ -1,8 +1,8 @@
 package com.example.upbit.service.authorization;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.ResponseEntity;
@@ -29,8 +29,6 @@ public class GetInfoService {
                                          new ParameterizedTypeReference<Map<String,Object>>() {};
 
     
-
-    // @SuppressWarnings("null")
     public Map<String, Object> getAccount(){
         
         final String endPoint = endPointProperties.getGetAccount();
@@ -49,16 +47,24 @@ public class GetInfoService {
         
         MultiValueMap<String, String> query = new LinkedMultiValueMap<>();
         query.add("market", market);
-        query.add("uuid", Arrays.asList(uuid).toString());
+        query.add("uuids[]",uuid);
 
-        Map<String, Object> response = null;
+        ResponseEntity<List<Map<String, Object>>> response = null;
+        Map<String, Object> errorResponse = null;
+        
+        List<Map<String, Object>> responseBody = null;
 
         try {
-            response = getSend(endPointProperties.getUuid(), null, query, MAP_TYPE).getBody();
+            response = getSend(endPointProperties.getUuid(), null, query, LIST_MAP_TYPE);
         } catch (WebClientResponseException e) {
-            response = e.getResponseBodyAs(MAP_TYPE);
+            errorResponse = e.getResponseBodyAs(MAP_TYPE);
+            return errorResponse;
         }
 
-        return response;    
+        responseBody = response.getBody();
+
+        if(!Objects.isNull(responseBody)){
+            return responseBody.get(0);
+        }else return null;  // It could be better making Common Error Response
     }
 }

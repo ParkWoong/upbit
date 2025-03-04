@@ -11,7 +11,6 @@ import org.springframework.web.reactive.function.client.ClientRequest;
 import org.springframework.web.reactive.function.client.ClientResponse;
 import org.springframework.web.reactive.function.client.ExchangeFilterFunction;
 import org.springframework.web.reactive.function.client.ExchangeFunction;
-import org.springframework.web.util.UriComponentsBuilder;
 
 import com.example.upbit.properties.AuthEndPointProperties;
 import com.example.upbit.properties.UpbitTokenProperties;
@@ -48,7 +47,66 @@ public class TokenFilterFunction implements ExchangeFilterFunction {
                 return next.exchange(withAuthHeader(request, jwt));
             }
 
+            // ================================================ 
             // 2. POST 요청: Body 추출 (Reactive Streams 보존)
+            // ================================================            
+
+            else if (request.method() == HttpMethod.POST) {   
+
+                final String query = getQueryFromRequest(request);
+
+                log.info("Post Request : {}", query);
+                
+                // String jwt = JWTUtil.makeToken(upbitTokenProperties.getAccessKey(),
+                //                                 upbitTokenProperties.getSecretKey(),
+                //                                 getQueryFromRequest(request));
+
+                // return next.exchange(withAuthHeader(request, jwt));
+
+                // 원본 요청 Body를 복제하기 위해 로컬 환경 복제 API 호출출
+                // for ClientRequest -> ClientResponse
+                return next
+                        .exchange(ClientRequest
+                                                .from(request)
+                                                .url(URI.create("http://localhost:8080/local/return"))
+                                                .build())
+                        .flatMap(response -> response.bodyToMono(String.class)
+                            .flatMap(bodyContent -> {
+                                String jwt = JWTUtil.makeToken(
+                                    upbitTokenProperties.getAccessKey(),
+                                    upbitTokenProperties.getSecretKey(),
+                                    query
+                                );
+                                
+                                final String newEndPoint = endPoint.concat("?").concat(query);
+
+                                log.info("Request URI : {}, Request Body : {}", newEndPoint, bodyContent);
+
+                                // 새 요청 생성 (기존 Body 유지)
+                                ClientRequest newRequest = ClientRequest.from(request)
+                                    .url(URI.create(newEndPoint))
+                                    .headers(headers -> headers.setBearerAuth(jwt))
+                                    .body(BodyInserters.fromValue(bodyContent))  // BodyInserter 활용
+                                    .build();
+        
+                                return next.exchange(newRequest);
+                            }));
+            }
+        }
+        return next.exchange(request);
+    }
+
+    private ClientRequest withAuthHeader(ClientRequest request, String jwt) {
+        return ClientRequest.from(request)
+                .headers(headers -> headers.set(HttpHeaders.AUTHORIZATION, "Bearer " + jwt))
+                .build();
+        }
+
+    private String getQueryFromRequest(ClientRequest request) {
+        return request.url().getQuery();
+    }
+
+    // 2. POST 요청: Body 추출 (Reactive Streams 보존)
             // else if (request.method() == HttpMethod.POST) {
             //     // ClientRequest의 body()를 가져옴 (BodyInserter 타입)
             //     BodyInserter<?, ? super ReactiveHttpOutputMessage> inserter = (BodyInserter<?, ? super ReactiveHttpOutputMessage>) request.body();
@@ -82,55 +140,4 @@ public class TokenFilterFunction implements ExchangeFilterFunction {
             //                     });
             //     }
             // }
-
-            else if (request.method() == HttpMethod.POST) {
-
-                
-
-                final String query = getQueryFromRequest(request);
-
-                log.info("Post Request : {}", query);
-
-                // 원본 요청 Body를 복제하기 위해 로컬 환경 복제 API 호출출
-                // for ClientRequest -> ClientResponse
-                return next
-                        .exchange(ClientRequest
-                                                .from(request)
-                                                .url(URI.create("http://localhost:8080/local/return"))
-                                                .build())
-                        .flatMap(response -> response.bodyToMono(String.class)
-                            .flatMap(bodyContent -> {
-                                String jwt = JWTUtil.makeToken(
-                                    upbitTokenProperties.getAccessKey(),
-                                    upbitTokenProperties.getSecretKey(),
-                                    query
-                                );
-                                
-                                log.info("Request URI : {}, Request Body : {}", endPoint, bodyContent);
-
-                                // 새 요청 생성 (기존 Body 유지)
-                                ClientRequest newRequest = ClientRequest.from(request)
-                                    .url(URI.create(endPoint))
-                                    .headers(headers -> headers.setBearerAuth(jwt))
-                                    .body(BodyInserters.fromValue(bodyContent))  // BodyInserter 활용
-                                    .build();
-        
-                                return next.exchange(newRequest);
-                            }));
-            }
-        }
-        return next.exchange(request);
-    }
-
-    private ClientRequest withAuthHeader(ClientRequest request, String jwt) {
-        return ClientRequest.from(request)
-                .headers(headers -> headers.set(HttpHeaders.AUTHORIZATION, "Bearer " + jwt))
-                .build();
-        }
-
-    private String getQueryFromRequest(ClientRequest request) {
-        return UriComponentsBuilder.fromUri(request.url())
-                .build()
-                .getQuery();
-    }
 }

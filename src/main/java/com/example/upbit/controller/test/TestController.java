@@ -51,13 +51,13 @@ public class TestController {
     }
 
     @GetMapping("/authorization/test")
-    public String authTest() {
-        return getAccountService.getAccount().toString();
+    public Map<String, Object> authTest() {
+        return getAccountService.getAccount();
     }
     
     @GetMapping("/test/bid")
     public Map<String, Object> testBidTrade() {
-        return tradeService.placeMarketBuyOrder(authEndPointProperties.getOrder(), "KRW-JTO", "100000");
+        return tradeService.placeMarketBuyOrder(authEndPointProperties.getOrder(), "KRW-JTO", "5000");
     }
 
     @GetMapping("/test/ask")
@@ -68,6 +68,12 @@ public class TestController {
     public byte[] returnData(@RequestBody byte[] entity) {
         return entity;
     }
+
+    @GetMapping("/test/uuid")
+    public Map<String, Object> testUUID() { 
+        return getAccountService.getCoinTradeInfo("KRW-JTO", "3dc732b1-77cc-4570-b69f-aab5fbba6fe4");
+    }
+    
     
     
 }
